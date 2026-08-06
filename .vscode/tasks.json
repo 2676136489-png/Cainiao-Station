@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build cainiao",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "if (!(Test-Path build)) { New-Item -ItemType Directory build | Out-Null }; if (Get-Command cl -ErrorAction SilentlyContinue) { cl /nologo /utf-8 /W4 /std:c11 main.c /Fe:build\\CainiaoStation.exe } elseif (Get-Command gcc -ErrorAction SilentlyContinue) { gcc -std=c11 -Wall -Wextra -O2 main.c -o build\\CainiaoStation.exe } else { Write-Error 'No C compiler found'; exit 1 }"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

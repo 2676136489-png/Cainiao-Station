@@ -4,26 +4,27 @@
 
 
 //头文件包含
-//#include <stdio.h>
+#include <stdio.h>
 //#include <string.h>
 //#include <stdbool.h>
 //#include <Windows.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 //#include<time.h>
 #include"User.h"
 
 // 内部函数声明
 void Manager_Operation(struct Package* head1, struct User* head2);
 void Manager_Put_in(struct Package* head1, struct User* head2);
-void Manager_Put_Out(struct Package* PackageLine, struct User* UserLine);
+void Manager_Put_Out(struct Package* head1, struct User* head2);
 void Manager_Search(struct Package* head1, struct User* head2);
-LinkPeople Manager_Delete_User(LinkPeople head2,LinkPackage* PackageLine);
+void Manager_Delete_User(struct User** head2);
+int Manager_log_in(struct Manager* head3);
 struct User* Manager_Search_Name(struct User* head);
 struct Package* Manager_Search_Number(struct Package* head);
-LinkPackage delete_user_packages(LinkPackage* PackageLine,char* UserName);
+void free_user_packages(struct Package* package_head);
 void Manager_Search_ways(struct Package* head);
 void Manager_Search_distance(struct Package* head);
-//int Manager_log_in(struct Manager* head3);
+int Manager_log_in(struct Manager* head3);
 
 // 定义 Manager 结构体,管理员
 struct Manager {
@@ -35,6 +36,14 @@ struct Manager {
 typedef struct Manager  Manager;
 typedef Manager* LinkManager;
 
+// for(i=0;i<3;i++){
+//     switch(State[i]){
+//         case 1:NewPackage->state[i]=State[i];break;
+//         case 0:NewPackage->state[i]=State[i];break;
+//         case -1:NewPackage->state[i]=-1;
+//     }
+//     if(i==0&&State[i])SetPackageTime(NewPackage,State[i]);
+// }
 
 LinkPackage CreateNewPackage(LinkPeople UserLine,LinkPackage PackageLine,char* packNum,char* puCode,char* owner,int* State){
 	int i;
@@ -43,8 +52,6 @@ LinkPackage CreateNewPackage(LinkPeople UserLine,LinkPackage PackageLine,char* p
     FILE* PackageFile=fopen("Package.txt","ab");
 	LinkPackage tmp=PackageLine;
 	LinkPackage NewPackage=(LinkPackage)malloc(sizeof(struct Package));
-    SetPackageTime(NewPackage,1);
-    //printf("%4d.%02d.%02d %02d:%02d:%02d  %d\n",NewPackage->IN_year,NewPackage->IN_month,NewPackage->IN_day,NewPackage->IN_hour,NewPackage->IN_minute,NewPackage->IN_second,NewPackage->IN_Yday);
 	NewPackage->NextPackage=NULL;
 	strcpy(NewPackage->PackNUM,packNum);
 	strcpy(NewPackage->PUcode,puCode);
@@ -53,7 +60,6 @@ LinkPackage CreateNewPackage(LinkPeople UserLine,LinkPackage PackageLine,char* p
     NewPackage->state[0]=State[0];
     NewPackage->state[2]=State[2];
     NewPackage->state[3]=0;
-    NewPackage->value=-1;
 	
 	if(PackageLine==NULL){
 		PackageLine=NewPackage;
@@ -67,7 +73,7 @@ LinkPackage CreateNewPackage(LinkPeople UserLine,LinkPackage PackageLine,char* p
     fclose(PackageFile);
 
 	FILE* Journal=fopen("ManagerJournal.txt","a");
-    fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 新包裹入库-----",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
+    fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 新包裹入库-----",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
     fprintf(Journal,"包裹编号：%-6.4s 取件码：%-6.4s 取件人：%-6.4s \r\n",packNum,puCode,owner);
     fflush(Journal);
     fclose(Journal);
@@ -148,7 +154,9 @@ LinkPackage CreateP_interface(LinkPeople UserLine,LinkPackage PackageLine){
         }
         ReferingUser=ReferingUser->NextPeople;
     }
-    addUserMessage(ReferingUser, "您的快递已到站！请尽快取件！");
+    char r[] = "您的快递已到站！请尽快取件！";
+    strcpy(ReferingUser->message[(++ReferingUser->l)%30], r);
+    ReferingUser->NewMessage=1;
 	printf("\n");
     
 	PackageLine=CreateNewPackage(UserLine,PackageLine,packNUM,PUcode,Owner,state);
@@ -166,45 +174,38 @@ void Manager_Operation(struct Package* head1, struct User* head2) {
             return;
         }
 
-        printf("\n管理员您好！请选择你要做的操作：\n");
+        printf("管理员您好！请选择你要做的操作：\n");
+        
         printf("1--入库快递\n");
         printf("2--出库快递\n");
         printf("3--查询快递\n");
         printf("4--注销用户\n");
-        printf("5--查看库存\n");  // 新增选项
-        printf("6--退出程序\n");
-        printf("请输入选择：");
-        if (scanf("%d", &flag) != 1||flag>5||flag<1) {
+        printf("5--退出程序\n");
+        printf("请输入：");
+        if (scanf("%d", &flag) != 1) {
             
-            printf("输入无效，请重新输入！\n");
+            printf("输入无效，请输入数字！\n");
             // 清空输入缓冲区
             while (getchar() != '\n');
             fclose(log_file);
             continue;
         }
-       system("cls");
+       
         switch (flag) {
         case 1:
-            Manager_Put_in(head1, head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行快递入库操作\n",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
+            Manager_Put_in(head1, head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行快递入库操作\n",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
             break;
         case 2:
-            Manager_Put_Out(head1, head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行快递出库操作\n",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
+            Manager_Put_Out(head1, head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行快递出库操作\n",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
             break;
         case 3:
-            Manager_Search(head1, head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行快递查询操作\n",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
+            Manager_Search(head1, head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行快递查询操作\n",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
             break;
         case 4:
-            head2=Manager_Delete_User(head2,&head1);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行注销账户操作\n",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
+            Manager_Delete_User(&head2);fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员进行注销账户操作\n",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
             break;
         case 5:
-            Manager_View_Inventory(head1);
-            if (log_file) {
-                fprintf(log_file,"[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员查看库存\n",
-                        Now->tm_year+1900, Now->tm_mon+1, Now->tm_mday,
-                        Now->tm_hour, Now->tm_min, Now->tm_sec);
-            }
-            break;
-        case 6:
+            
             printf("退出程序\n");
             break;
             
@@ -212,7 +213,7 @@ void Manager_Operation(struct Package* head1, struct User* head2) {
 
        
         fclose(log_file);
-    } while (flag != 6);//do while循环实现反复选择
+    } while (flag != 5);//do while循环实现反复选择
     return;
 }
 
@@ -492,196 +493,165 @@ void Manager_Put_in(struct Package* head1, struct User* head2) {
     return;
 }
 
-// 清空输入缓冲区
-void clearInputBuffer() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
-// 安全获取字符串输入
-int getSafeStringInput(char *buffer, int bufferSize) {
-    if (fgets(buffer, bufferSize, stdin) == NULL) {
-        return 0; // 输入失败
-    }
-    
-    // 去除换行符
-    size_t len = strlen(buffer);
-    if (len > 0 && buffer[len-1] == '\n') {
-        buffer[len-1] = '\0';
-    } else {
-        // 输入过长，清空缓冲区
-        clearInputBuffer();
-        return 0;
-    }
-    
-    return 1;
-}
-
-// 安全获取数字输入
-int getSafeIntInput(int *value) {
-    char buffer[20];
-    if (!getSafeStringInput(buffer, sizeof(buffer))) {
-        return 0;
-    }
-    
-    // 验证是否为纯数字
-    for (char *p = buffer; *p != '\0'; p++) {
-        if (!isdigit(*p)) {
-            return 0;
-        }
-    }
-    
-    return sscanf(buffer, "%d", value) == 1;
-}
-
 
 /*出库快递函数*/
-void Manager_Put_Out(struct Package* PackageLine, struct User* UserLine) {
-    struct tm* Now = GetNowTime();
-    FILE* ManagerJournal = fopen("ManagerJournal.txt", "a");
-    if (ManagerJournal == NULL) {
-        printf("无法打开管理员日志文件！\n");
-        return;
-    }
+void Manager_Put_Out(struct Package* head1, struct User* head2) {
+    struct Package* bag = head1; // 包裹链
+    struct User* people = head2; // 用户链
+    char r[] = "您的快递已出库！请确认是否为本人取走！";
 
-    char packNum[5], ownerName[5];
-    
-    // 输入包裹编号
-    printf("请输入要取出的包裹编号：");
+    // 打开日志文件，以追加模式写入
+    FILE* log_file = fopen("Manager.txt", "a");
+
     while (1) {
-        if (!getSafeStringInput(packNum, sizeof(packNum))) {
-            printf("输入无效，请重新输入包裹编号：");
+        
+        fprintf(log_file, "请输入取件人的账号：\n");
+        printf("请输入取件人的账号：\n");
+        char Ac[4];
+        fgets(Ac, sizeof(Ac), stdin);
+        // 去除 fgets 可能读取的换行符
+        Ac[strcspn(Ac, "\n")] = 0;
+        fprintf(log_file, "用户输入的取件人账号: %s\n", Ac);
+
+        // 查找取件人
+        struct User* found_user = NULL;
+        struct User* current_user = head2;
+        while (current_user != NULL) {
+            if (strcmp(Ac, current_user->ACnumber) == 0) {
+                found_user = current_user;
+                break;
+            }
+            current_user = current_user->NextPeople;
+        }
+
+        if (found_user == NULL) {
+            
+            fprintf(log_file, "未找到该取件人，请重新输入！\n");
+            printf("未找到该取件人，请重新输入！\n");
             continue;
         }
-        break;
-    }
 
-    // 查找包裹
-    LinkPackage targetPkg = PackageLine;
-    while (targetPkg != NULL && strcmp(targetPkg->PackNUM, packNum) != 0) {
-        targetPkg = targetPkg->NextPackage;
-    }
+        fprintf(log_file, "请输入待取出快递的编号：\n");
+        printf("请输入待取出快递的编号：\n");
+        char num[5];
+        fgets(num, sizeof(num), stdin);
+        // 去除 fgets 可能读取的换行符
+        num[strcspn(num, "\n")] = 0;
+        fprintf(log_file, "用户输入的快递编号: %s\n", num);
 
-    if (targetPkg == NULL) {
-        printf("未找到该包裹！\n");
-        fprintf(ManagerJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员取件：包裹%s不存在！\n",
-                Now->tm_year+1900, Now->tm_mon+1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, packNum);
-        fclose(ManagerJournal);
-        return;
-    }
-
-    // 检查包裹状态
-    if (targetPkg->state[0] == 0) {
-        printf("该包裹已经出库，不能重复取件！\n");
-        fprintf(ManagerJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员尝试取件：包裹%s已出库！\n",
-                Now->tm_year+1900, Now->tm_mon+1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, packNum);
-        fclose(ManagerJournal);
-        return;
-    }
-
-    // 查找包裹所有者
-    LinkPeople owner = UserLine;
-    while (owner != NULL && strcmp(owner->Name, targetPkg->Owner) != 0) {
-        owner = owner->NextPeople;
-    }
-
-    if (owner != NULL) {
-        // 更新用户包裹链中的状态
-        LinkPackage userPkg = owner->PackageLine;
-        while (userPkg != NULL && strcmp(userPkg->PackNUM, packNum) != 0) {
-            userPkg = userPkg->NextPackage;
+        // 查找快递包裹
+        struct Package* found_package = NULL;
+        struct Package* current_package = head1;
+        while (current_package != NULL) {
+            if (strcmp(num, current_package->PackNUM) == 0) {
+                found_package = current_package;
+                break;
+            }
+            current_package = current_package->NextPackage;
         }
-        if (userPkg != NULL && userPkg->state[0] == 1) {
-            userPkg->state[0] = 0;
+
+        if (found_package == NULL) {
+            
+            fprintf(log_file, "未找到该快递编号，请重新输入！\n");
+            printf("未找到该快递编号，请重新输入！\n");
+            continue;
         }
+
+        if (found_package->state[0] == 0) {
+           
+            fprintf(log_file, "该快递未入库，不能出库！\n");
+            printf("该快递未入库，不能出库！\n");
+            continue;
+        }
+
+        if (strcmp(found_package->Owner, found_user->Name) != 0) {
+           
+           
+            fprintf(log_file, "该快递不属于此用户，不能出库！\n");
+            printf("该快递不属于此用户，不能出库！\n");
+            continue;
+        }
+
+        // 标记快递为已出库
+        found_package->state[0] = 0;
+        // 给用户发送消息
+        strcpy(found_user->message[++(found_user->l)], r);
+
+      
+        fprintf(log_file, "快递出库成功！取件人: %s, 快递编号: %s\n", found_user->Name, found_package->PackNUM);
+        printf("快递出库成功！\n");
+
+        
+        fprintf(log_file, "是否退出出库包裹程序:\n1--继续取出\n2--退出程序\n");
+        printf("是否退出出库包裹程序:\n");
+        printf("1--继续取出\n");
+        printf("2--退出程序\n");
+        int i;
+        // 清空输入缓冲区
+        while (getchar() != '\n');
+        if (scanf("%d", &i) != 1) {
+           
+            fprintf(log_file, "输入无效，请输入数字！\n");
+            printf("输入无效，请输入数字！\n");
+            // 清空输入缓冲区
+            while (getchar() != '\n');
+            continue;
+        }
+        fprintf(log_file, "用户输入的选择: %d\n", i);
+        if (i == 2) {
+            break;
+        }
+        // 清空输入缓冲区
+        while (getchar() != '\n');
     }
-
-    // 更新主包裹链状态
-    targetPkg->state[0] = 0;
-    SetPackageTime(targetPkg, 0); // 设置出库时间
-
-    // 发送消息给用户
-    if (owner != NULL) {
-        addUserMessage(owner, "您的快递已出库！请确认是否为本人取走！");
-    }
-
-    printf("包裹 %s 已成功取出！\n", packNum);
-    fprintf(ManagerJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员取件：包裹%s（所有者：%s）已出库！\n",
-            Now->tm_year+1900, Now->tm_mon+1, Now->tm_mday,
-            Now->tm_hour, Now->tm_min, Now->tm_sec, packNum, targetPkg->Owner);
-    fclose(ManagerJournal);
+    // 关闭日志文件
+    fclose(log_file);
+    return;
 }
 
 
 /*删除用户函数*/
+void Manager_Delete_User(struct User** head2) {
+    FILE* log_file = fopen("", "a");
 
-LinkPeople Manager_Delete_User(LinkPeople head2, LinkPackage* PackageLine) {
-    FILE* log_file = fopen("ManagerJournal.txt", "a");
+    printf("请输入要删除的用户账号：\n");
+    char input_ac[5];
     getchar();
-    printf("请输入要删除的用户账号：");
-    char input_ac[10];
-    gets(input_ac);
-    printf("请输入要删除的用户密码：");
-    char input_pw[10];
-    gets(input_pw);
+    fgets(input_ac, sizeof(input_ac), stdin);
+    getchar();
+    input_ac[strcspn(input_ac, "\n")] = 0;
     
-    struct User* current = head2;
+    printf("请输入要删除的用户密码：\n");
+    getchar();
+    char input_pw[5];
+    fgets(input_pw, sizeof(input_pw), stdin);
+    input_pw[strcspn(input_pw, "\n")] = 0;
+    fprintf(log_file, "用户输入的密码: %s\n", input_pw);
+
+    struct User* current = *head2;
     struct User* prev = NULL;
 
     while (current != NULL) {
-        if (strcmp(current->ACnumber, input_ac) == 0) {
-            printf("找到该账号！");
-            if(strcmp(current->Password, input_pw) == 0) {
-                // 删除用户的所有包裹
-                *PackageLine=delete_user_packages(PackageLine, current->Name);
+        if (strcmp(current->ACnumber, input_ac) == 0 && strcmp(current->Password, input_pw) == 0) {
+            // 释放用户名下包裹链表的内存
+            free_user_packages(current->PackageLine);
 
-                if (prev == NULL) {
-                    // 如果要删除的是头节点
-                    head2 = current->NextPeople;
-                } else {
-                    // 连接前后节点
-                    prev->NextPeople = current->NextPeople;
-                }
-
-                // 释放当前用户节点的内存
-                LinkPeople toDelete = current;
-                current = current->NextPeople;
-                free(toDelete);
-                
-                // 更新用户文件
-                FILE* file = fopen("User.tmp", "wb");
-                FILE* REMOVE = fopen("User.txt", "rb");
-                if (!file) {
-                    perror("无法打开用户文件");
-                    return head2;
-                }
-
-                LinkPeople tmp = head2;
-                while (tmp != NULL) {
-                    fwrite(tmp, sizeof(struct User) - sizeof(struct User*)-sizeof(LinkPackage), 1, file);
-                    tmp = tmp->NextPeople;
-                }
-                fflush(REMOVE);
-                fclose(REMOVE);
-                fclose(file);
-                remove("User.txt");
-                rename("User.tmp", "User.txt");
-
-                fprintf(log_file, "用户删除成功！账号: %s 密码：%s\n", input_ac, input_pw);
-                printf("用户删除成功！\n");
-                fclose(log_file);
-                return head2;
-            } else {
-                printf("密码输入错误！请按任意键重试！\n");
-                printf("退出程序请输入0！");
-                char a;
-                scanf("%c", &a);
-                if(a == '0') {
-                    return head2;
-                }
+            if (prev == NULL) {
+                // 如果要删除的是头节点
+                *head2 = current->NextPeople;
             }
+            else {
+                // 连接前后节点
+                prev->NextPeople = current->NextPeople;
+            }
+
+            // 释放当前用户节点的内存
+            free(current);
+
+            fprintf(log_file, "用户删除成功！账号: %s 密码：%s\n", input_ac,input_pw);
+            printf("用户删除成功！\n");
+            fclose(log_file);
+            return;
         }
         prev = current;
         current = current->NextPeople;
@@ -689,70 +659,26 @@ LinkPeople Manager_Delete_User(LinkPeople head2, LinkPackage* PackageLine) {
     fprintf(log_file, "未找到匹配的用户账号和密码，删除失败！\n");
     printf("未找到匹配的用户账号和密码，删除失败！\n");
     fclose(log_file);
-    return head2;
 }
 
-// 删除用户的所有包裹并从链表中移除
-LinkPackage delete_user_packages(LinkPackage* PackageLine, char* UserName) {
-    LinkPackage prev = NULL;
-    LinkPackage current = PackageLine;
-    
-    // 创建临时文件用于保存剩余的包裹
-    FILE* tmp_file = fopen("Package.tmp", "wb");
-    if (!tmp_file) {
-        perror("无法创建临时包裹文件");
-        return PackageLine;
-    }
 
-    LinkPackage newHead = NULL;
-    LinkPackage last = NULL;
-    
+// 释放用户名下包裹链表的内存
+void free_user_packages(struct Package* package_head) {
+    struct Package* current = package_head;
+    struct Package* next;
     while (current != NULL) {
-        if (strcmp(current->Owner, UserName)){
-            // 不是该用户的包裹，保留
-            if (newHead == NULL) {
-                newHead = current;
-                last = current;
-            } else {
-                last->NextPackage = current;
-                last = current;
-            }
-            // 写入临时文件
-            fwrite(current, sizeof(struct Package) - sizeof(LinkPackage), 1, tmp_file);
-        } else {
-            // 是该用户的包裹，需要删除
-            LinkPackage toDelete = current;
-            current = current->NextPackage;
-            free(toDelete);
-            continue;
-        }
-        current = current->NextPackage;
+        next = current->NextPackage;
+        free(current);
+        current = next;
     }
-    
-    if (last != NULL) {
-        last->NextPackage = NULL;
-    }
-    
-    fclose(tmp_file);
-    
-    // 更新主包裹文件
-    remove("Package.txt");
-    rename("Package.tmp", "Package.txt");
-    
-    return newHead;
 }
 
 
 /*管理员登录函数*/
 int Manager_log_in(struct Manager* head3) {
     int Remainingtime = 5;
-    printf("管理员您好！请登录：\n");
     while (1) {
-        if (Remainingtime == 0) {
-            printf("剩余次数已用完！即将退出程序！");
-            break;
-            printf("1");
-        }
+        printf("管理员您好！请登录：\n");
         Sleep(1); // 在这里停留一秒之后再进行下一步
         printf("账号：\n");
         char LeaderAccount[10]; // 账号
@@ -773,11 +699,15 @@ int Manager_log_in(struct Manager* head3) {
         }
         if (find == NULL) {
             printf("账号或密码输入错误！\n");
-            --Remainingtime;
+            Remainingtime--;
         }
         printf("你还有%d次机会尝试！", Remainingtime);
+        if (Remainingtime == 0) {
+            printf("剩余次数已用完！即将退出程序！");
+            return -1;
+        }
+        
     }
-    return -1;
 }
 
 /*
@@ -790,183 +720,70 @@ int Manager_log_in(struct Manager* head3) {
 
 void checkOvetTime(LinkPackage ReferingPackage,LinkPeople UserLine){
 	time_t now = time(NULL); 
-    struct tm* Now = localtime(&now);
-    int currentYear = Now->tm_year + 1900;
-    int currentYday = Now->tm_yday;
-
-    while(ReferingPackage != NULL) {
-        // 只检查在库中且未超时的包裹
-        if(ReferingPackage->state[0] == 1 && ReferingPackage->state[3] == 0) {
-            // 查找包裹所有者
-            LinkPeople owner = UserLine;
-            while(owner != NULL && strcmp(owner->Name, ReferingPackage->Owner) != 0) {
-                owner = owner->NextPeople;
+	struct tm* Now=localtime(&now);
+    while(ReferingPackage){
+        if(ReferingPackage->state[0]==1){
+            while(strcmp(ReferingPackage->Owner,UserLine->Name)){
+                UserLine=UserLine->NextPeople;
             }
-            
-            if(owner == NULL) {
-                ReferingPackage = ReferingPackage->NextPackage;
-                continue;
-            }
-
-            // 计算在库天数
-            int daysInStorage = 0;
-            
-            if(ReferingPackage->IN_year == currentYear) {
-                // 同一年
-                daysInStorage = currentYday - ReferingPackage->IN_Yday;
-            } else {
-                // 跨年计算
-                daysInStorage = AllYearDay(ReferingPackage->IN_year) - ReferingPackage->IN_Yday + currentYday;
-            }
-
-            // 检查是否超时（超过3天）
-            if(daysInStorage > 3) {
-                ReferingPackage->state[3] = 1; // 标记为超时
-                addUserMessage(owner, "您的包裹滞留超时，已被送回仓库！");
-                
-                // 更新出库时间（模拟送回仓库）
-                SetPackageTime(ReferingPackage, 0);
-            } 
-            // 检查是否即将超时（2-3天）
-            else if(daysInStorage >= 2) {
-                addUserMessage(owner, "您的包裹即将滞留超时，请尽快取回！");
+            if(ReferingPackage->state[0]==1){
+                if(ReferingPackage->IN_year==Now->tm_year){
+                    if((Now->tm_yday-ReferingPackage->IN_Yday)>3){
+                        ReferingPackage->state[3]=1;
+                        strcpy(UserLine->message[(++UserLine->l)%30],"您的包裹滞留超时");
+                        UserLine->NewMessage=1;
+                    }
+                    else ReferingPackage->state[3]=0;
+        
+                    if((Now->tm_yday-ReferingPackage->IN_Yday)>2){
+                        strcpy(UserLine->message[(++UserLine->l)%30],"您的包裹即将滞留超时，请尽快取回");
+                        UserLine->NewMessage=1;
+                    }
+                }
+                else {
+                    if((AllYearDay(ReferingPackage->IN_year)-ReferingPackage->IN_Yday+Now->tm_yday)>3){
+                        ReferingPackage->state[3]=1;
+                        strcpy(UserLine->message[(++UserLine->l)%30],"您的包裹滞留超时");
+                        UserLine->NewMessage=1;
+                    }
+                    else ReferingPackage->state[3]=0;
+        
+                    if((AllYearDay(ReferingPackage->IN_year)-ReferingPackage->IN_Yday+Now->tm_yday)>2){
+                        strcpy(UserLine->message[(++UserLine->l)%30],"您的包裹即将滞留超时，请尽快取回");
+                        UserLine->NewMessage=1;
+                    }
+                }
             }
         }
-        ReferingPackage = ReferingPackage->NextPackage;
+        ReferingPackage=ReferingPackage->NextPackage;
     }
 }
 
 void checkDelivery(LinkPackage ReferingPackage,LinkPeople UserLine){
     time_t now = time(NULL); 
-    struct tm* Now = localtime(&now);
-    int currentYear = Now->tm_year + 1900;
-    int currentYday = Now->tm_yday;
-
-    while(ReferingPackage != NULL) {
-        // 只检查运输中(state[2]==0)且未送达的包裹
-        if(ReferingPackage->state[2] == 0 && ReferingPackage->state[0] == -1) {
-            // 查找包裹所有者
-            LinkPeople owner = UserLine;
-            while(owner != NULL && strcmp(owner->Name, ReferingPackage->Owner) != 0) {
-                owner = owner->NextPeople;
+	struct tm* Now=localtime(&now);
+    while(ReferingPackage){
+        if(ReferingPackage->state[2]==0){
+            while(strcmp(ReferingPackage->Owner,UserLine->Name)){
+                UserLine=UserLine->NextPeople;
             }
-            
-            if(owner == NULL) {
-                ReferingPackage = ReferingPackage->NextPackage;
-                continue;
-            }
-
-            // 计算运输天数
-            int daysInTransit = 0;
-            
-            if(ReferingPackage->IN_year == currentYear) {
-                // 同一年
-                daysInTransit = currentYday - ReferingPackage->IN_Yday;
-            } else {
-                // 跨年计算
-                daysInTransit = AllYearDay(ReferingPackage->IN_year) - ReferingPackage->IN_Yday + currentYday;
-            }
-
-            // 检查是否已送达（超过3天）
-            if(daysInTransit > 3) {
-                ReferingPackage->state[2] = 1; // 标记为已送达
-                
-                if(ReferingPackage->IsUser) {
-                    // 给用户发送的包裹
-                    addUserMessage(owner, "您的包裹已送达目的地！");
-                    
-                    // 更新为在库状态
-                    ReferingPackage->state[0] = 1;
-                    SetPackageTime(ReferingPackage, 1); // 重置入库时间
-                } else {
-                    // 给非用户发送的包裹
-                    ReferingPackage->state[0] = 0; // 直接标记为已出库
-                    SetPackageTime(ReferingPackage, 0); // 设置出库时间
-                }
-            }
-        }
-        ReferingPackage = ReferingPackage->NextPackage;
-    }
-}
-
-
-// 查看库存函数
-void Manager_View_Inventory(LinkPackage PackageLine){
-    if (PackageLine == NULL) {
-        printf("当前库存为空！\n");
-        return;
-    }
-
-    struct tm* Now = GetNowTime();
-    FILE* log_file = fopen("ManagerJournal.txt", "a");
-    if (log_file == NULL) {
-        printf("无法打开日志文件！\n");
-    } else {
-        fprintf(log_file, "[ %4d.%02d.%02d %02d:%02d:%02d ] 管理员查看库存\n",
-                Now->tm_year+1900, Now->tm_mon+1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec);
-        fclose(log_file);
-    }
-
-    printf("\n========== 当前库存包裹列表 ==========\n");
-    printf("总数\t\t包裹编号\t取件码\t\t物主\t\t重量(kg)\t入库时间\t状态\n");
-
-    int count = 0;
-    LinkPackage current = PackageLine;
-    while (current != NULL) {
-        // 只显示在库中的包裹(state[0]==1且未超时state[3]==0)
-        if (current->state[0] == 1 && current->state[3] == 0) {
-            count++;
-            
-            // 格式化入库时间
-            char inTime[20];
-            snprintf(inTime, sizeof(inTime), "%02d-%02d %02d:%02d",
-                    current->IN_month, current->IN_day,
-                    current->IN_hour, current->IN_minute);
-            
-            // 格式化状态
-            char status[20];
-            if (current->state[1] == 0) {
-                strcpy(status, "有损坏");
-            } else {
-                strcpy(status, "完好");
-            }
-
-            printf("%-4d\t\t%-4s\t\t%-4s\t\t%-4s\t\t%-4.2f\t\t%-4s\t%-4s\n",
-                   count, current->PackNUM, current->PUcode,
-                   current->Owner, current->weight, inTime, status);
-        }
-        current = current->NextPackage;
-        if (count > 0) {
-            getchar();
-            printf("\n输入包裹编号查看详情，或输入0返回: ");
-            char input[10];
-            gets(input);
-            
-            if (input != "0") {
-                LinkPackage pkg = PackageLine;
-                while (pkg != NULL) {
-                    if (strcmp(pkg->PackNUM, input) == 0) {
-                        DisplayPackageDetails(pkg);
-                        break;
+                if(ReferingPackage->IN_year==Now->tm_year){
+                    if((Now->tm_yday-ReferingPackage->IN_Yday)>3){
+                        ReferingPackage->state[2]=1;
+                        strcpy(UserLine->message[(++UserLine->l)%30],"您的包裹已送达");
+                        UserLine->NewMessage=1;
                     }
-                    pkg = pkg->NextPackage;
+                    else ReferingPackage->state[2]=0;
                 }
-                
-                if (pkg == NULL) {
-                    printf("未找到该包裹！\n");
+                else {
+                    if((AllYearDay(ReferingPackage->IN_year)-ReferingPackage->IN_Yday+Now->tm_yday)>3){
+                        strcpy(UserLine->message[(++UserLine->l)%30],"您的包裹已送达");
+                        ReferingPackage->state[2]=1;
+                    }
+                    else ReferingPackage->state[2]=0;
                 }
-            }
-            else break;
         }
+        ReferingPackage=ReferingPackage->NextPackage;
     }
-
-    if (count == 0) {
-        printf("\n当前没有在库包裹！\n");
-    } else {
-        printf("\n共计 %d 件在库包裹\n", count);
-    }
-    
-    printf("\n按任意键返回...");
-    getchar();
 }
+

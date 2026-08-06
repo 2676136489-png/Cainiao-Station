@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>菜鸟驿站智能快递管理系统 - 项目展示</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel2: #1c2430;
+      --line: #2d3744;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --cyan: #58a6ff;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.65;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+    header {
+      text-align: center;
+      padding: 48px 20px 32px;
+      border-bottom: 1px solid var(--line);
+    }
+    .badge {
+      display: inline-block;
+      margin: 6px 4px;
+      padding: 4px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--muted);
+      background: var(--panel);
+    }
+    h1 { font-size: 34px; letter-spacing: 1px; }
+    .subtitle { color: var(--cyan); margin-top: 10px; font-size: 16px; }
+    h2 {
+      margin: 48px 0 18px;
+      padding-left: 12px;
+      border-left: 4px solid var(--cyan);
+      font-size: 22px;
+    }
+    p { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .card h3 { font-size: 16px; color: var(--green); margin-bottom: 8px; }
+    .card ul { list-style: none; }
+    .card li { color: var(--muted); padding: 3px 0; font-size: 14px; }
+    .card li::before { content: "▸ "; color: var(--cyan); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; }
+    th { background: var(--panel2); color: var(--cyan); }
+    td { color: var(--muted); }
+    code {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      color: var(--yellow);
+    }
+    .terminal {
+      background: #0b0f14;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      white-space: pre;
+      overflow-x: auto;
+      color: #c9d1d9;
+    }
+    .terminal .c { color: var(--cyan); }
+    .terminal .g { color: var(--green); }
+    .terminal .y { color: var(--yellow); }
+    .terminal .r { color: var(--red); }
+    .arch {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+    }
+    .node {
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      border-radius: 8px;
+      padding: 12px 18px;
+      background: var(--panel2);
+      font-size: 14px;
+    }
+    .arrow { color: var(--muted); font-size: 20px; }
+    footer {
+      margin-top: 64px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 26px; }
+      .terminal { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>菜鸟驿站智能快递管理系统</h1>
+      <div class="subtitle">纯 C 语言 · 控制台可视化 · 零第三方依赖</div>
+      <div>
+        <span class="badge">C11</span>
+        <span class="badge">Windows / Linux</span>
+        <span class="badge">链表 + 文本持久化</span>
+        <span class="badge">控制台仪表盘</span>
+      </div>
+    </header>
+
+    <h2>项目简介</h2>
+    <p>
+      这是一个面向课程设计与简历的快递驿站管理系统。系统采用纯 C 语言实现，用户可注册、登录、寄件、取件、
+      查看包裹轨迹与站内消息；管理员可完成包裹入库、出库、多条件查询、库存盘点、用户注销和操作日志审计。
+      启动时会自动模拟“运输中 → 已到站”和“滞留超时”的业务状态流转。
+    </p>
+
+    <h2>功能模块</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>用户端</h3>
+        <ul>
+          <li>注册 / 登录 / 注销</li>
+          <li>寄件与运费明细</li>
+          <li>取件码取件 / 代取</li>
+          <li>包裹轨迹时间线</li>
+          <li>站内消息通知</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>管理端</h3>
+        <ul>
+          <li>包裹入库 / 出库</li>
+          <li>按用户、单号、运输方式查询</li>
+          <li>库存列表与系统概览</li>
+          <li>注销用户</li>
+          <li>操作日志查看</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>工程能力</h3>
+        <ul>
+          <li>文本化持久层</li>
+          <li>模块化分层架构</li>
+          <li>健壮输入校验</li>
+          <li>自动演示数据</li>
+          <li>单文件 / 模块化双版本</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>控制台可视化页面</h2>
+    <div class="terminal"><span class="c">┌──────────────────────────────────────────────────────────┐</span>
+<span class="c">│</span>  菜鸟驿站智能快递管理系统                        <span class="c">│</span>
+<span class="c">│</span>  纯 C 实现 · 控制台可视化 · 无第三方依赖          <span class="c">│</span>
+<span class="c">└──────────────────────────────────────────────────────────┘</span>
+
+<span class="c">┌─ 系统运行状态 ──────────────────────────────────────────┐</span>
+   <span class="g">注册用户</span>        3      <span class="g">包裹总数</span>        5
+   <span class="y">待取件</span>          2      <span class="y">运输中</span>          1
+   <span class="r">超时滞留</span>        1      <span class="g">已取件</span>          1
+   <span class="g">累计运费(元)</span>                    108.60
+<span class="c">└──────────────────────────────────────────────────────────┘</span>
+
+<span class="c">┌─ 请选择登录角色 ───────────────────────────────────────┐</span>
+   1. 管理员登录
+   2. 客户登录 / 注册
+   3. 退出系统
+<span class="c">└──────────────────────────────────────────────────────────┘</span></div>
+
+    <h2>系统架构</h2>
+    <div class="arch">
+      <div class="node">可视化控制台 UI</div>
+      <div class="arrow">→</div>
+      <div class="node">用户端 / 管理端</div>
+      <div class="arrow">→</div>
+      <div class="node">业务服务层</div>
+      <div class="arrow">→</div>
+      <div class="node">文本持久层</div>
+      <div class="arrow">→</div>
+      <div class="node">data/*.txt</div>
+    </div>
+
+    <h2>演示账号</h2>
+    <table>
+      <tr><th>角色</th><th>账号</th><th>密码</th><th>说明</th></tr>
+      <tr><td>管理员 1</td><td><code>0001</code></td><td><code>8888</code></td><td>入库、出库、查询、注销用户</td></tr>
+      <tr><td>管理员 2</td><td><code>0002</code></td><td><code>9999</code></td><td>同上</td></tr>
+      <tr><td>客户</td><td><code>zhangsan</code></td><td><code>123456</code></td><td>演示用户张三</td></tr>
+      <tr><td>客户</td><td><code>lisi</code></td><td><code>123456</code></td><td>演示用户李四</td></tr>
+      <tr><td>客户</td><td><code>wangwu</code></td><td><code>123456</code></td><td>演示用户王五</td></tr>
+    </table>
+
+    <h2>运行方式</h2>
+    <table>
+      <tr><th>方式</th><th>操作</th></tr>
+      <tr><td>Visual Studio 2022</td><td>打开 <code>CainiaoStation.sln</code>，按 <code>F5</code></td></tr>
+      <tr><td>VS Code</td><td>打开根目录，打开 <code>main.c</code>，按 <code>F5</code></td></tr>
+      <tr><td>Windows 命令行</td><td>双击 <code>run.bat</code></td></tr>
+      <tr><td>GCC / MinGW</td><td><code>gcc -std=c11 -O2 main.c -o CainiaoStation</code></td></tr>
+    </table>
+
+    <h2>业务规则</h2>
+    <table>
+      <tr><th>场景</th><th>规则</th></tr>
+      <tr><td>标准 / 省内</td><td>首重 10 元，续重 2 元/kg</td></tr>
+      <tr><td>标准 / 省外</td><td>首重 12 元，续重 5 元/kg</td></tr>
+      <tr><td>加急 / 省内</td><td>首重 12 元，续重 2 元/kg</td></tr>
+      <tr><td>加急 / 省外</td><td>首重 22 元，续重 8 元/kg</td></tr>
+      <tr><td>高价值商品</td><td>价值 ≥ 1000 元，总运费 × 1.1</td></tr>
+      <tr><td>保价</td><td>保费 2 元；价值 ≥ 1000 元再加 (价值-1000) × 0.003 元</td></tr>
+      <tr><td>滞留超时</td><td>入库超过 3 天未取件，标记为超时滞留</td></tr>
+      <tr><td>运输送达</td><td>运输超过 3 天自动模拟送达</td></tr>
+    </table>
+
+    <h2>目录结构</h2>
+    <div class="terminal">Cainiao-Station/
+├─ main.c                    # 单文件版本，直接编译运行
+├─ src/                      # 模块化源码
+├─ CainiaoStation.sln        # VS2022 解决方案
+├─ data/                     # 运行时自动生成
+├─ tools/build_single_file.py
+├─ README.md
+└─ docs/index.html           # 本展示页</div>
+
+    <footer>菜鸟驿站智能快递管理系统 · 纯 C 课程设计 · GitHub 项目展示页</footer>
+  </div>
+</body>
+</html>

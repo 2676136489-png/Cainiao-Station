@@ -3,6 +3,30 @@
 #include<stdlib.h>
 #include "Manager.h"
 
+
+
+// 取件
+void pickUpPackage(LinkPeople currentUser, LinkPackage PackageLine) {
+    if (currentUser->PackageLine == NULL) {
+        printf("             您没有待取的包裹。\n");
+        return;
+    }
+    printf("             请输入取件码：");
+    char PUCODE[5];
+    scanf("%4s", PUCODE);
+    // 调用取件函数
+    int state = PickUp_Package(PackageLine, PUCODE, currentUser);
+
+    if(state){
+        printf("取件成功！");
+    }
+    else printf("取件失败！");
+}
+
+
+
+
+
 // 寄件
 LinkPackage sendPackage(LinkPeople currentUser, LinkPackage PackageLine,LinkPeople UserLine) {
     struct tm* Now=GetNowTime();
@@ -14,7 +38,7 @@ LinkPackage sendPackage(LinkPeople currentUser, LinkPackage PackageLine,LinkPeop
     printf("             收件人是否是程序用户：1.是  0.不是\n");
     scanf("%d",&isUser);
     while(1){
-        if(isUser==1){
+        if(isUser){
             printf("             请输入收件人名称：");
             scanf("%s",NAME);
             while(UserLine){
@@ -25,18 +49,17 @@ LinkPackage sendPackage(LinkPeople currentUser, LinkPackage PackageLine,LinkPeop
                 }
             }
         }
-        else if(isUser==0) {
+        else {
             printf("             请输入收件人名称：");
             scanf("%s",NAME);
             printf("             请输入收件人联系电话：");
             scanf("%s",PhoneNum);
             break;
         }
-        //if(isUser==1||isUser==0)break;
+        if(isUser)break;
         else {
             char ch;
-            printf("             输入有误！重新输入选1，或按任意键退出...  ");
-            getchar();
+            printf("             非用户！重新输入选1，或按任意键退出...  ");
             gets(&ch);
             if(ch=='1'){
                 isUser=1;
@@ -133,23 +156,21 @@ LinkPackage sendPackage(LinkPeople currentUser, LinkPackage PackageLine,LinkPeop
 //1.用户提示信息问题 2.寄件，收件者不在系统中时 3.界面，框架 4.Manager中函数调整问题(over) 5.用户快递超时问题
 
 int main() {
-    
     LinkPackage PackageLine = InsertPackage();
     LinkPeople UserLine = Initialization_User();
-    
     //超时与送达
     checkOvetTime(PackageLine,UserLine);
-
     checkDelivery(PackageLine,UserLine);
-    
-    People_Package(UserLine, PackageLine);
-    
 
-    //管理员初始化
+    People_Package(UserLine, PackageLine);
+
+    //管理员初始化9
     LinkManager p1=(LinkManager)malloc(sizeof(struct Manager));
     LinkManager p2=(LinkManager)malloc(sizeof(struct Manager));
     strcpy(p1->Account, "0001");
     strcpy(p1->Password, "8888");
+    p1->next = p2;
+    p2->next = NULL;
     strcpy(p2->Account, "0002");
     strcpy(p2->Password, "9999");
     p1->next = p2;
@@ -157,20 +178,21 @@ int main() {
     LinkManager head3 = p1;//管理员头指针
     
 
+
     int m; // 角色选择
     int n; // 业务选择
-    printf("             请选择角色\n             1--管理员\n             2--客户\n");
-    scanf("%d", &m);
+    int Remainingtime = 5; // 管理员登录剩余尝试次数
+    printf("                    请选择角色\n                    1--管理员\n                    2--客户\n");
+    printf("                     选择：");
+	scanf("%d", &m);
     if (m == 1)
     { /*管理员登录*/
-        system("cls");
-        int r=Manager_log_in(head3);
-       if (r == 0) 
+       if (Manager_log_in(head3) == 0) 
        {
            Manager_Operation(PackageLine, UserLine);
 
         }
-       else if (r == -1) 
+       else if (Manager_log_in(head3) == -1) 
        {
            printf("即将退出程序！");
        }
@@ -179,13 +201,15 @@ int main() {
 
     else if (m == 2) 
     {
-        system("cls");
-        printf("                   用户身份为客户\n");
+    	system("cls");
+        printf("                  用户身份为客户\n");
         printf("            若您已经拥有账号，请输入 1\n       若您尚未拥有账号，请输入 2 前往注册页面\n");
         int k;
+        printf("                     选择：");
         while (scanf("%d", &k) != 1 || (k != 1 && k != 2)) 
         {
             printf("             输入无效，请输入 1 或 2。\n");
+            printf("                     选择：");
             while (getchar() != '\n'); // 清空输入缓冲区
         }
 
@@ -198,11 +222,14 @@ int main() {
         {
             char acnumber[5];
             char password[5];
+            system("cls");
             while (1) {
-                printf("             请输入注册账号\n");
+                printf("                 请输入注册账号\n");
+                printf("                     账号：");
                 if (scanf("%4s", acnumber) != 1) 
                 {
                     printf("             输入无效，请输入正确的账号。\n");
+                    printf("                  账号：");
                     continue;
                 }
                 // 在注册时，我需要先判断账号是否重复
@@ -227,15 +254,19 @@ int main() {
                 }
             }
             printf("             请输入注册账号密码\n");
+            printf("                     密码：");
             if (scanf("%4s", password) != 1)
             {
                 printf("             输入无效，请输入正确的密码。\n");
+                printf("                     密码：");
             }
             else 
             { 
                 UserLine=Register(acnumber, acnumber, password, UserLine);
                 printf("             新账号已经注册成功。\n");
+                
                 // 找到新注册的用户
+                system("cls");
                 LinkPeople find = UserLine;
                 while (find != NULL) 
                 {
@@ -250,9 +281,8 @@ int main() {
         }
         if (currentUser != NULL) 
         {
-            system("cls");
             do {
-                printf("               请选择您要办理的业务\n");
+                printf("              请选择您要办理的业务\n");
                 printf("                  1--取件\n");
                 printf("                  2--查看包裹状态\n");
                 printf("                  3--寄件(上门取件)\n");
@@ -262,50 +292,54 @@ int main() {
                 while (scanf("%d", &n) != 1&&n<0&&n>=5) //同样考虑用户在输入时的误触
                 {
                     printf("             输入无效，请输入正确的选项。\n");
+                    printf("                     选择：");
                     while (getchar() != '\n'); // 清空输入缓冲区
                 }
                 int lenth;
-                
+                int w=0;
                 switch (n) 
                 { 
                 case 1:{
-                    system("cls");
+                	system("cls");
                     char a[5];
                     printf("             请输入您的取件码：");
+                    printf("               取件码：");
                     getchar();
                     fgets(a, 5, stdin);//用于匹配取件码
                     lenth = (int)strlen(a);
                     if (lenth != 0 && a[lenth - 1] == '\n')
-                        a[lenth - 1] = '\0';
-                    int r=PickUp_Package(PackageLine,a, currentUser,UserLine);//这里要修改
-                    if(r==1)printf("取件成功!\n");
-                    else printf("取件失败!\n");
+                        a[lenth - 1] = '0';
+                    int r=PickUp_Package(PackageLine,a, currentUser);//这里要修改
+                    if(r==1)printf("             取件成功!");
+                    else printf("             取件失败!");
                     break;
                 }  
                 case 2:
-                system("cls");
+                	system("cls");
                     checkPackageStatus(currentUser);//displayPackageInfo(currentUser->PackageLine);
                     break;
                 case 3:
-                system("cls");
+                	system("cls");
                     PackageLine=sendPackage(currentUser, PackageLine,UserLine);
                     break;
                 case 4:
-                    system("cls");
-                    n = cancelAccount(&UserLine, currentUser);
-                    if (n == 1) {
-                        // 删除用户后，需要更新包裹链表
-                        PackageLine = delete_user_packages(PackageLine, currentUser->Name);
-                        currentUser = NULL;
-                    }
+                	system("cls");
+                   w= cancelAccount(&UserLine, currentUser);
+                   if (w == 1)
+                       currentUser = NULL;
+                   else
+                       break;
                     break;
-                case 5:system("cls");ScanMessage(currentUser);break;
+                case 5:
+				system("cls");
+				ScanMessage(currentUser);
+				break;
                 case 0:
-                system("cls");
-                    printf("             退出系统。\n");
+                	system("cls");
+                    printf("                 退出系统。\n");
                     break;
                 default:
-                
+                	system("cls");
                     printf("             无效选项，请重新输入。\n");
                     break;
                 }
@@ -314,6 +348,6 @@ int main() {
     }
     Keep_In_UserFile(UserLine);
     Keep_In_PackageFile(PackageLine);
-    printf("感谢再次使用\n");
+    printf("                 感谢再次使用\n");
     return 0;
 }

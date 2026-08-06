@@ -17,37 +17,19 @@
 
 #ifndef User_H
 #define User_H
-
-struct Message {
-    char content[60];
-    time_t timestamp;  // 消息时间戳
-};
-
-struct User {
-    char Name[5];
-    char ACnumber[5];
-    char Password[5];
-    struct Package* PackageLine;
-    struct User* NextPeople;
-    struct Message message[30];  // 修改为结构体数组
-    int l;
+struct User{
+    char Name[5];        //用户名
+    char ACnumber[5];    //账号
+    char Password[5];    //密码
+    struct Package* PackageLine;//名下包裹
+    struct User* NextPeople; //用户链
+    char message[30][60];
+    int l = -1;
     int NewMessage;
 };
 
 typedef struct User* LinkPeople;//User的链
 
-void addUserMessage(LinkPeople user, const char* content) {
-    if (user == NULL || content == NULL) return;
-    
-    user->l = (user->l + 1) % 30;  // 循环缓冲区
-    strncpy(user->message[user->l].content, content, sizeof(user->message[user->l].content) - 1);
-    user->message[user->l].content[sizeof(user->message[user->l].content) - 1] = '\0';
-    user->message[user->l].timestamp = time(NULL);
-    
-    if (user->NewMessage < 30) {
-        user->NewMessage++;
-    }
-}
 //向用户链中插入用户（从文件中读取）程序开始自动启动
 LinkPeople Initialization_User()
 {//初始化主用户链
@@ -58,11 +40,10 @@ LinkPeople Initialization_User()
     tmp=NULL;
     FILE* INSERT;
     INSERT=fopen("User.txt","rb");
-    // int cnt=0;
+
     while(1){
-        LinkPeople Now_User=(LinkPeople)malloc(sizeof(struct User));
-        // cnt++;
-        // printf("%d",cnt);
+        LinkPeople Now_User=(LinkPeople)malloc(sizeof(User));
+        
         int UserNUM=fread(Now_User,sizeof(struct User)-sizeof(LinkPeople)-sizeof(LinkPackage),1,INSERT);//从文件中读出New_User的数据
         if(UserNUM==0)
         {//如果从标记点处往下用户数为零则退出并清空刚创建的New_User
@@ -96,12 +77,11 @@ LinkPeople Register(char* NAME,char* ACNUMBER,char* PASSWORD,LinkPeople FirstPeo
     UserFile=fopen("User.txt","ab");
 
     FILE* Journal=fopen("UserJournal.txt","a");
-    fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 新用户注册-----",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
+    fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 新用户注册-----",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec);
     fprintf(Journal,"新用户:%s  注册\n",NAME);
     fprintf(Journal,"新用户--账号：%s  密码：%s\n",ACNUMBER,PASSWORD);
     fclose(Journal);
 
-    NewUser->l=-1;
     strcpy(NewUser->Name,NAME);
     strcpy(NewUser->ACnumber,ACNUMBER);
     strcpy(NewUser->Password,PASSWORD);
@@ -124,23 +104,19 @@ LinkPeople Register(char* NAME,char* ACNUMBER,char* PASSWORD,LinkPeople FirstPeo
 void People_Package(LinkPeople UserLine, LinkPackage PackageLine) {
     LinkPeople currentUser = UserLine;
     while (currentUser != NULL) {
-        LinkPackage userPackages = NULL;
-        LinkPackage lastUserPackage = NULL;
+        LinkPackage userPackages = NULL;  // 用户包裹链的头节点
+        LinkPackage lastUserPackage = NULL;  // 用户包裹链的尾节点
 
+        // 第一次遍历：收集所有属于当前用户的包裹
         LinkPackage currentPackage = PackageLine;
         while (currentPackage != NULL) {
             if (strcmp(currentUser->Name, currentPackage->Owner) == 0) {
+                // 创建新节点副本（避免修改原链表）
                 LinkPackage newPackage = (LinkPackage)malloc(sizeof(struct Package));
                 memcpy(newPackage, currentPackage, sizeof(struct Package));
-                
-                // 同步状态
-                newPackage->state[0] = currentPackage->state[0];
-                newPackage->state[1] = currentPackage->state[1];
-                newPackage->state[2] = currentPackage->state[2];
-                newPackage->state[3] = currentPackage->state[3];
-                
                 newPackage->NextPackage = NULL;
 
+                // 链接到用户包裹链
                 if (userPackages == NULL) {
                     userPackages = newPackage;
                     lastUserPackage = newPackage;
@@ -151,6 +127,8 @@ void People_Package(LinkPeople UserLine, LinkPackage PackageLine) {
             }
             currentPackage = currentPackage->NextPackage;
         }
+
+        // 将构建好的包裹链赋给用户
         currentUser->PackageLine = userPackages;
         currentUser = currentUser->NextPeople;
     }
@@ -175,13 +153,13 @@ LinkPeople Cancel(LinkPeople FirstPeople,char* People_Name)
         printf("您有未完成的包裹，暂无法注销账户");
         FILE* Journal;
         Journal=fopen("UserJournal.txt","a");
-        fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户:%s 尝试注销账号，有未完成包裹注销失败\n",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,tmp->Name);
+        fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户:%s 尝试注销账号，有未完成包裹注销失败\n",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,tmp->Name);
         fclose(Journal);
         return FirstPeople;
     }
     FILE* Journal;
     Journal=fopen("UserJournal.txt","a");
-    fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户:%s 注销账号\n",Now->tm_year+1900,Now->tm_mon+1,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,tmp->Name);
+    fprintf(Journal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户:%s 注销账号\n",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,tmp->Name);
     fclose(Journal); 
     if(tmp==Slow){
         FirstPeople=FirstPeople->NextPeople;
@@ -191,24 +169,6 @@ LinkPeople Cancel(LinkPeople FirstPeople,char* People_Name)
         Slow=tmp;
     }
     free(Slow);
-
-    FILE* file = fopen("User.tmp", "wb"); // 使用写入二进制模式，会覆盖旧文件
-            FILE* REMOVE=fopen("User.txt","rb");
-            if (!file) {
-                perror("无法打开用户文件");
-                return FirstPeople;
-            }
-
-            while (FirstPeople != NULL) {
-                fwrite(FirstPeople, sizeof(struct User) - sizeof(struct User*)-sizeof(LinkPackage), 1, file);
-                FirstPeople =FirstPeople->NextPeople;
-            }
-            fflush(REMOVE);
-            fclose(REMOVE);
-            fclose(file);
-            remove("User.txt");
-            rename("User.tmp","User.txt");
-
     return FirstPeople;   
 }
 
@@ -223,121 +183,41 @@ void Keep_In_UserFile(LinkPeople FirstPeople){
         fwrite(FirstPeople,sizeof(struct User)-sizeof(LinkPeople)-sizeof(LinkPackage),1,KEEP);
         FirstPeople=FirstPeople->NextPeople;
     }
-    fflush(KEEP);
     fclose(KEEP);
 }
 
 //取件函数
-int PickUp_Package(LinkPackage PackageLine, char* PUCODE, LinkPeople User, LinkPeople UserLine)
+int PickUp_Package(LinkPackage PackageLine, char* PUCODE, LinkPeople User)//1.取件成功；0.取件失败
 {
-    if (PackageLine == NULL || PUCODE == NULL || User == NULL || UserLine == NULL) {
-        printf("参数错误！\n");
-        return 0;
-    }
-
-    struct tm* Now = GetNowTime();
-    FILE* UserJournal = fopen("UserJournal.txt", "a");
-    if (UserJournal == NULL) {
-        printf("无法打开日志文件！\n");
-        return 0;
-    }
-
-    // (1) 查找包裹
-    LinkPackage targetPkg = PackageLine;
-    while (targetPkg != NULL && strcmp(targetPkg->PUcode, PUCODE) != 0) {
-        targetPkg = targetPkg->NextPackage;
-    }
-
-    if (targetPkg == NULL) {
-        printf("无该包裹！\n");
-        fprintf(UserJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 取件：包裹不存在，取件失败！\n",
-                Now->tm_year + 1900, Now->tm_mon + 1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, User->Name);
-        fclose(UserJournal);
-        return 0;
-    }
-
-    // (2) 检查包裹是否已经出库
-    if (targetPkg->state[0] == 0) {
-        printf("该包裹已经出库，不能重复取件！\n");
-        fprintf(UserJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 尝试重复取件：包裹已出库！\n",
-                Now->tm_year + 1900, Now->tm_mon + 1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, User->Name);
-        fclose(UserJournal);
-        return 0;
-    }
-
-    // (3) 检查包裹是否超时
-    if (targetPkg->state[3] == 1) {
+    struct tm* Now=GetNowTime();
+    FILE* UserJournal=fopen("UserJournal.txt","a");
+    
+    // (1)参数：(初始化主包裹链，取件码，当前使用的用户)
+    while (strcmp(PackageLine->PUcode, PUCODE)) PackageLine = PackageLine->NextPackage;
+    int CHOOSE;
+    if(PackageLine->state[3]==1){
         printf("包裹滞留超时，已被送回，可去前台联系工作人员处理。\n");
-        fprintf(UserJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 取件：包裹滞留超时，取件失败！\n",
-                Now->tm_year + 1900, Now->tm_mon + 1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, User->Name);
-        fclose(UserJournal);
+        fprintf(UserJournal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 取件：包裹滞留超时，已被送回，取件失败！",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,User->Name);
         return 0;
     }
-
-    // (4) 检查当前用户是否为包裹所有者
-    int isOwner = (strcmp(targetPkg->Owner, User->Name) == 0);
-    if (!isOwner) {
-        printf("是否为用户 %s 代取快递？ 1.确认  0.取消\n", targetPkg->Owner);
-        int CHOOSE;
+    if (strcmp(PackageLine->Owner, User->Name)) {
+        printf("是否为用户%s代取快递: 1.确认操作  0.取消操作\n", PackageLine->Owner);
+        printf(" 输入：\n");
         scanf("%d", &CHOOSE);
-        if (CHOOSE != 1) {
-            fprintf(UserJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 代取件操作取消！\n",
-                    Now->tm_year + 1900, Now->tm_mon + 1, Now->tm_mday,
-                    Now->tm_hour, Now->tm_min, Now->tm_sec, User->Name);
-            fclose(UserJournal);
-            return 0;
-        }
     }
-
-    // (5) 查找包裹所有者，并更新其包裹状态
-    LinkPeople owner = UserLine;
-    while (owner != NULL && strcmp(owner->Name, targetPkg->Owner) != 0) {
-        owner = owner->NextPeople;
-    }
-
-    if (owner != NULL) {
-        LinkPackage userPkg = owner->PackageLine;
-        while (userPkg != NULL && strcmp(userPkg->PUcode, PUCODE) != 0) {
-            userPkg = userPkg->NextPackage;
-        }
-        if (userPkg != NULL && userPkg->state[0] == 1) {  // 只更新未出库的包裹
-            userPkg->state[0] = 0;
-        }
-    }
-
-    // (6) 更新主包裹链的状态（仅在包裹未出库时）
-    if (targetPkg->state[0] == 1) {
-        targetPkg->state[0] = 0;
-        
-        // (7) 记录日志
-        fprintf(UserJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s %s取件：已出库！\n",
-                Now->tm_year + 1900, Now->tm_mon + 1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, User->Name,
-                isOwner ? "" : "代");
-        
-        fclose(UserJournal);
+    else {
+        fprintf(UserJournal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 为%s代取件：已出库！",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,User->Name,PackageLine->Owner);
         return 1;
-    } else {
-        printf("取件失败：包裹状态异常！\n");
-        fprintf(UserJournal, "[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 取件失败：包裹状态异常！\n",
-                Now->tm_year + 1900, Now->tm_mon + 1, Now->tm_mday,
-                Now->tm_hour, Now->tm_min, Now->tm_sec, User->Name);
-        fclose(UserJournal);
+    }
+    if (!CHOOSE) {
         return 0;
     }
+    fprintf(UserJournal,"[ %4d.%02d.%02d %02d:%02d:%02d ] 用户%s 取件：已出库！",Now->tm_year+1900,Now->tm_mon,Now->tm_mday,Now->tm_hour,Now->tm_min,Now->tm_sec,User->Name);
+    fclose(UserJournal);
+    PackageLine->state[0] = 1;
+    return 1;
 }
 
-
-/*
-    存-1表示无该状态
-    state[0]存取状况1--库中，0--出库；
-    state[1]存放包裹状况（是否损坏或丢失）1-完好 0-损坏 ；
-    state[2]运输状态，1-运达，0-途中（用户互送），-1-途中（向非用户的人送）；
-    state[3]是否超时，1-滞留超时，0-未超时
-    */
 
 //寄出包裹函数(可给用户使用)
 LinkPackage Package_write(float WEIGHT, int TRANSPORT, int VALUE, int DISTANCE, int INSURANCE, LinkPackage  FirstPackage,LinkPeople User,char *NAME,int IS,char* PhoneNUM) {
@@ -453,6 +333,19 @@ void checkPackageStatus(LinkPeople currentUser) {
     }
 }
 
+/*
+    存-1为无该状态
+    state[0]存取状况1--库中，0--出库；
+    state[1]存放包裹状况（是否损坏或丢失）1-完好 0-损坏 ；
+    state[2]运输状态，1-运达，0-途中；
+    state[3]是否超时，1-滞留超时，0-未超时
+    */
+// if(temp->state[0]=1&&temp->state[3]==0){
+            
+//     printf("包裹编号: %s 取件码: %s 取件状态: %d 存储状态: %d 寄件状态: %d\n",
+//         temp->PackNUM, temp->PUcode, temp->state[0], temp->state[1], temp->state[2]);
+// }
+
 // 注销账号
 int cancelAccount(LinkPeople* FirstPeople, LinkPeople currentUser)
 {
@@ -463,15 +356,15 @@ int cancelAccount(LinkPeople* FirstPeople, LinkPeople currentUser)
     if (j != 1)
     {
         printf("              注销操作已取消\n");
-        return 1;
+        return 0;
     }
     else if (j == 1)
     {
         *FirstPeople = Cancel(*FirstPeople, currentUser->Name);
         printf("                           账号注销成功！\n");
-        return 0;
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 // 登录
@@ -601,35 +494,10 @@ LinkPeople login(LinkPeople FirstPeople)
 }
 
 void ScanMessage(LinkPeople ReferingUser){
-    if (ReferingUser == NULL) {
-        printf("错误：用户信息无效！\n");
-        return;
+    int i;
+    for(i=0;i<=ReferingUser->l;i++){
+        printf("%d--%s\n",i,ReferingUser->message[i]);
     }
-
-    if (ReferingUser->l < 0) {
-        printf("您目前没有任何消息。\n");
-        return;
-    }
-
-    printf("\n===== 您的消息 (%d条) =====\n", ReferingUser->l + 1);
-    if (ReferingUser->NewMessage) {
-        printf("(*) 您有 %d 条新消息\n", ReferingUser->NewMessage);
-    }
-
-    // 按时间倒序显示消息
-    for (int i = 0; i <= ReferingUser->l; i++) {
-        char timeStr[20];
-        struct tm* timeinfo = localtime(&ReferingUser->message[i].timestamp);
-        strftime(timeStr, sizeof(timeStr), "%m-%d %H:%M", timeinfo);
-        
-        char newFlag = (ReferingUser->NewMessage > 0 && i >= ReferingUser->l - ReferingUser->NewMessage + 1) 
-                      ? '*' : ' ';
-        printf("[%02d] %c [%s] %s\n", 
-               i, newFlag, timeStr, ReferingUser->message[i].content);
-    }
-
-    // 标记所有消息为已读
-    ReferingUser->NewMessage = 0;
 }
 
 #endif

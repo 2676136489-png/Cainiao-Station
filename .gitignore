@@ -1,0 +1,8 @@
+build/
+data/
+*.exe
+*.obj
+*.o
+*.user
+*.tmp
+.vs/
