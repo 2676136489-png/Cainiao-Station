@@ -6,3 +6,5 @@ data/
 *.user
 *.tmp
 .vs/
+.idea/
+*.iml
