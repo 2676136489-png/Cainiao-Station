@@ -3,6 +3,13 @@ setlocal
 
 if not exist build mkdir build
 
+if exist tools\zig\zig.exe (
+    set "ZIG_CACHE_DIR=%TEMP%\zig-cache"
+    set "ZIG_GLOBAL_CACHE_DIR=%TEMP%\zig-global"
+    tools\zig\zig.exe cc -std=c11 -O2 -Wall -Wextra main.c -o build\CainiaoStation.exe
+    exit /b %errorlevel%
+)
+
 where msbuild >nul 2>nul
 if not errorlevel 1 (
     msbuild CainiaoStation.sln /t:Build /p:Configuration=Release /p:Platform=x64 /m

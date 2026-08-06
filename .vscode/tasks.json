@@ -8,7 +8,7 @@
       "args": [
         "-NoProfile",
         "-Command",
-        "if (!(Test-Path build)) { New-Item -ItemType Directory build | Out-Null }; if (Get-Command cl -ErrorAction SilentlyContinue) { cl /nologo /utf-8 /W4 /std:c11 main.c /Fe:build\\CainiaoStation.exe } elseif (Get-Command gcc -ErrorAction SilentlyContinue) { gcc -std=c11 -Wall -Wextra -O2 main.c -o build\\CainiaoStation.exe } else { Write-Error 'No C compiler found'; exit 1 }"
+        "if (!(Test-Path build)) { New-Item -ItemType Directory build | Out-Null }; $env:ZIG_CACHE_DIR=\"$env:TEMP\\zig-cache\"; $env:ZIG_GLOBAL_CACHE_DIR=\"$env:TEMP\\zig-global\"; if (Test-Path tools\\zig\\zig.exe) { & tools\\zig\\zig.exe cc -std=c11 -O2 -Wall -Wextra main.c -o build\\CainiaoStation.exe } elseif (Get-Command cl -ErrorAction SilentlyContinue) { cl /nologo /utf-8 /W4 /std:c11 main.c /Fe:build\\CainiaoStation.exe } elseif (Get-Command gcc -ErrorAction SilentlyContinue) { gcc -std=c11 -Wall -Wextra -O2 main.c -o build\\CainiaoStation.exe } else { Write-Error 'No C compiler found'; exit 1 }"
       ],
       "group": {
         "kind": "build",

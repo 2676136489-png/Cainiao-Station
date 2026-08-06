@@ -22,7 +22,7 @@ static void print_package_row(int index, const Package* pkg) {
            transport_text(pkg->transport), storage_status_text(pkg), pkg->money);
 }
 
-static void print_package_detail(const Package* pkg) {
+static void print_manager_package_detail(const Package* pkg) {
     ui_panel("包裹详情", COLOR_BRIGHT_CYAN);
     printf("   单号: %s    取件码: %s\n", pkg->pack_num, pkg->pickup_code);
     printf("   寄件人: %s    收件人: %s\n", pkg->owner, pkg->receiver);
@@ -222,7 +222,7 @@ static void manager_search(LinkPackage packages, LinkUser users) {
             if (pkg == NULL) {
                 ui_notice("未找到该包裹。", COLOR_BRIGHT_RED, 1);
             } else {
-                print_package_detail(pkg);
+                print_manager_package_detail(pkg);
             }
         } else if (choice == 3) {
             int transport = 0;

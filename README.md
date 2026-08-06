@@ -154,6 +154,10 @@ gcc -std=c11 -O2 main.c -o CainiaoStation
 ./CainiaoStation
 ```
 
+### 方式五：项目自带便携编译器（当前仓库已配置）
+
+项目根目录的 `tools/zig/` 中已放入便携 Zig 编译器（该目录已加入 `.gitignore`，不会上传到 GitHub）。直接双击 `run.bat`，或打开 VS Code 按 `F5`，即可使用本地 Zig 编译并运行，无需安装 Visual Studio 或 MinGW。
+
 ## 数据结构说明
 
 用户与包裹均使用单链表组织，是典型的指针与动态内存练习：

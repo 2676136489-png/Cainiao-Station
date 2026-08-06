@@ -920,8 +920,8 @@ void append_log(const char* file_name, const char* fmt, ...) {
 #include <windows.h>
 #endif
 
-static void print_chars(char ch, int count) {
-    for (int i = 0; i < count; i++) putchar(ch);
+static void print_chars(const char* text, int count) {
+    for (int i = 0; i < count; i++) printf("%s", text);
 }
 
 static int display_width(const char* text) {
@@ -1005,13 +1005,13 @@ void ui_header(const char* title, const char* subtitle) {
     ui_clear_screen();
     ui_set_color(COLOR_CYAN, COLOR_RESET, 1);
     printf("┌");
-    print_chars('─', UI_WIDTH - 2);
+    print_chars("─", UI_WIDTH - 2);
     printf("┐\n");
     ui_center_line(title, COLOR_BRIGHT_WHITE, 1);
     if (subtitle != NULL) ui_center_line(subtitle, COLOR_BRIGHT_CYAN, 0);
     ui_set_color(COLOR_CYAN, COLOR_RESET, 1);
     printf("└");
-    print_chars('─', UI_WIDTH - 2);
+    print_chars("─", UI_WIDTH - 2);
     printf("┘\n");
     ui_reset_color();
 }
@@ -1019,7 +1019,7 @@ void ui_header(const char* title, const char* subtitle) {
 void ui_rule(void) {
     ui_set_color(COLOR_CYAN, COLOR_RESET, 0);
     printf("  ");
-    print_chars('─', UI_WIDTH - 4);
+    print_chars("─", UI_WIDTH - 4);
     printf("\n");
     ui_reset_color();
 }
@@ -1030,7 +1030,7 @@ void ui_panel(const char* title, int color) {
     if (remaining < 0) remaining = 0;
     ui_set_color(color, COLOR_RESET, 1);
     printf("┌─ %s ", title);
-    print_chars('─', remaining);
+    print_chars("─", remaining);
     printf("┐\n");
     ui_reset_color();
 }
@@ -1038,7 +1038,7 @@ void ui_panel(const char* title, int color) {
 void ui_panel_end(void) {
     ui_set_color(COLOR_CYAN, COLOR_RESET, 1);
     printf("└");
-    print_chars('─', UI_WIDTH - 2);
+    print_chars("─", UI_WIDTH - 2);
     printf("┘\n");
     ui_reset_color();
 }
@@ -1634,7 +1634,7 @@ static void print_package_row(int index, const Package* pkg) {
            transport_text(pkg->transport), storage_status_text(pkg), pkg->money);
 }
 
-static void print_package_detail(const Package* pkg) {
+static void print_manager_package_detail(const Package* pkg) {
     ui_panel("包裹详情", COLOR_BRIGHT_CYAN);
     printf("   单号: %s    取件码: %s\n", pkg->pack_num, pkg->pickup_code);
     printf("   寄件人: %s    收件人: %s\n", pkg->owner, pkg->receiver);
@@ -1834,7 +1834,7 @@ static void manager_search(LinkPackage packages, LinkUser users) {
             if (pkg == NULL) {
                 ui_notice("未找到该包裹。", COLOR_BRIGHT_RED, 1);
             } else {
-                print_package_detail(pkg);
+                print_manager_package_detail(pkg);
             }
         } else if (choice == 3) {
             int transport = 0;

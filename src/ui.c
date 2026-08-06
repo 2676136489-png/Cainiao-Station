@@ -9,8 +9,8 @@
 #include <windows.h>
 #endif
 
-static void print_chars(char ch, int count) {
-    for (int i = 0; i < count; i++) putchar(ch);
+static void print_chars(const char* text, int count) {
+    for (int i = 0; i < count; i++) printf("%s", text);
 }
 
 static int display_width(const char* text) {
@@ -94,13 +94,13 @@ void ui_header(const char* title, const char* subtitle) {
     ui_clear_screen();
     ui_set_color(COLOR_CYAN, COLOR_RESET, 1);
     printf("┌");
-    print_chars('─', UI_WIDTH - 2);
+    print_chars("─", UI_WIDTH - 2);
     printf("┐\n");
     ui_center_line(title, COLOR_BRIGHT_WHITE, 1);
     if (subtitle != NULL) ui_center_line(subtitle, COLOR_BRIGHT_CYAN, 0);
     ui_set_color(COLOR_CYAN, COLOR_RESET, 1);
     printf("└");
-    print_chars('─', UI_WIDTH - 2);
+    print_chars("─", UI_WIDTH - 2);
     printf("┘\n");
     ui_reset_color();
 }
@@ -108,7 +108,7 @@ void ui_header(const char* title, const char* subtitle) {
 void ui_rule(void) {
     ui_set_color(COLOR_CYAN, COLOR_RESET, 0);
     printf("  ");
-    print_chars('─', UI_WIDTH - 4);
+    print_chars("─", UI_WIDTH - 4);
     printf("\n");
     ui_reset_color();
 }
@@ -119,7 +119,7 @@ void ui_panel(const char* title, int color) {
     if (remaining < 0) remaining = 0;
     ui_set_color(color, COLOR_RESET, 1);
     printf("┌─ %s ", title);
-    print_chars('─', remaining);
+    print_chars("─", remaining);
     printf("┐\n");
     ui_reset_color();
 }
@@ -127,7 +127,7 @@ void ui_panel(const char* title, int color) {
 void ui_panel_end(void) {
     ui_set_color(COLOR_CYAN, COLOR_RESET, 1);
     printf("└");
-    print_chars('─', UI_WIDTH - 2);
+    print_chars("─", UI_WIDTH - 2);
     printf("┘\n");
     ui_reset_color();
 }
