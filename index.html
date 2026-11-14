@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%23000'/%3E%3Ccircle cx='32' cy='32' r='30' fill='none' stroke='%23ffffff' stroke-opacity='.4'/%3E%3Ctext x='32' y='45' font-size='34' text-anchor='middle' fill='%23ffffff' font-family='serif'%3E%E9%A9%BF%3C/text%3E%3C/svg%3E"
+  />
+  <title>菜鸟驿站 · 纯 C 控制台物流系统</title>
+  <meta
+    name="description"
+    content="菜鸟驿站智能快递管理系统：以标准 C 与 Windows 控制台 API 构建的轻量级物流追踪系统，模块化分层、纯文本持久化、零第三方依赖。"
+  />
+
+  <link rel="stylesheet" href="fonts/fonts.css" />
+
+  <script src="vendor/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['"Instrument Serif"', '"Noto Serif SC"', "serif"],
+            body: ['"Barlow"', '"Noto Sans SC"', "sans-serif"]
+          },
+          borderRadius: {
+            DEFAULT: "9999px"
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    html {
+      background: #000;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: #000;
+    }
+
+    ::selection {
+      background: #fff;
+      color: #000;
+    }
+
+    .liquid-glass {
+      background: rgba(255, 255, 255, 0.01);
+      background-blend-mode: luminosity;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: none;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .liquid-glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1.4px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.45) 0%,
+        rgba(255, 255, 255, 0.15) 20%,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0) 60%,
+        rgba(255, 255, 255, 0.15) 80%,
+        rgba(255, 255, 255, 0.45) 100%
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .liquid-glass-strong {
+      background: rgba(255, 255, 255, 0.01);
+      background-blend-mode: luminosity;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      border: none;
+      box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .liquid-glass-strong::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1.4px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(255, 255, 255, 0.2) 20%,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0) 60%,
+        rgba(255, 255, 255, 0.2) 80%,
+        rgba(255, 255, 255, 0.5) 100%
+      );
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body class="bg-black font-body text-white antialiased">
+  <div id="root"></div>
+
+  <script>
+    (function () {
+      var originalError = console.error;
+      console.error = function () {
+        var text = Array.prototype.map.call(arguments, String).join(" ");
+        if (text.indexOf("unique \"key\"") !== -1 || text.indexOf("Each child in a list") !== -1) {
+          return;
+        }
+        originalError.apply(console, arguments);
+      };
+    })();
+
+    window.SITE = {
+      github: "https://github.com/2676136489-png/Cainiao-Station",
+      heroVideo: "assets/videos/hero.mp4",
+      capVideo: "assets/videos/capabilities.mp4",
+      nav: [
+        { key: "home", label: "首页", hash: "#/" },
+        { key: "voyages", label: "航程", hash: "#/voyages" },
+        { key: "source", label: "源码", hash: "#/source" },
+        { key: "innovation", label: "创新", hash: "#/innovation" },
+        { key: "launch", label: "启程", hash: "#/launch" }
+      ]
+    };
+  </script>
+
+  <script src="vendor/react.development.js"></script>
+  <script src="vendor/react-dom.development.js"></script>
+  <script src="vendor/babel.min.js"></script>
+  <script src="vendor/framer-motion.js"></script>
+  <script>
+    window.Motion = window.Motion || window.FramerMotion;
+  </script>
+
+  <!-- 图标：内联 SVG，随 currentColor 着色 -->
+  <script type="text/babel">
+    (function () {
+      const ArrowUpRight = ({ className = "h-5 w-5" }) => (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M7 17L17 7" />
+          <path d="M7 7h10v10" />
+        </svg>
+      );
+
+      const Play = ({ className = "h-4 w-4" }) => (
+        <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+          <polygon points="6 4 20 12 6 20 6 4" />
+        </svg>
+      );
+
+      const Clock = ({ className = "h-7 w-7" }) => (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3.5 2" />
+        </svg>
+      );
+
+      const Globe = ({ className = "h-7 w-7" }) => (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18" />
+          <path d="M12 3c2.6 2.6 4 5.6 4 9s-1.4 6.4-4 9c-2.6-2.6-4-5.6-4-9s1.4-6.4 4-9Z" />
+        </svg>
+      );
+
+      const Menu = ({ className = "h-5 w-5" }) => (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M4 7h16" />
+          <path d="M4 12h16" />
+          <path d="M4 17h16" />
+        </svg>
+      );
+
+      const Close = ({ className = "h-5 w-5" }) => (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          className={className}
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12" />
+          <path d="M18 6L6 18" />
+        </svg>
+      );
+
+      const MaterialIcon = ({ path, className = "h-6 w-6" }) => (
+        <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+          <path d={path} />
+        </svg>
+      );
+
+      const ImageIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h14q.825 0 1.413.588T21 5v14q0 .825-.587 1.413T19 21H5Zm1-4h12l-3.75-5-3 4L9 13l-3 4Z"
+        />
+      );
+
+      const MovieIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M4 6.47 5.76 10H20v8H4V6.47M22 4h-4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.89-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4Z"
+        />
+      );
+
+      const BulbIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1Zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7Z"
+        />
+      );
+
+      const UserIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+        />
+      );
+
+      const ShieldIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"
+        />
+      );
+
+      const DatabaseIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.58 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm0 2c3.87 0 6 1.5 6 2s-2.13 2-6 2-6-1.5-6-2 2.13-2 6-2zm6 12c0 .5-2.13 2-6 2s-6-1.5-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-5c0 .5-2.13 2-6 2s-6-1.5-6-2v-2.23C7.61 10.55 9.72 11 12 11s4.39-.45 6-1.23V12z"
+        />
+      );
+
+      const CodeIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"
+        />
+      );
+
+      const LayersIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"
+        />
+      );
+
+      const ChartIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"
+        />
+      );
+
+      const PackageIcon = ({ className }) => (
+        <MaterialIcon
+          className={className}
+          path="M20 2H4c-1.1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-.9-2-2-2zm-1 18H5V9h14v11zm1-13H4V4h16v3z"
+        />
+      );
+
+      window.Icons = {
+        ArrowUpRight,
+        Play,
+        Clock,
+        Globe,
+        Menu,
+        Close,
+        ImageIcon,
+        MovieIcon,
+        BulbIcon,
+        UserIcon,
+        ShieldIcon,
+        DatabaseIcon,
+        CodeIcon,
+        LayersIcon,
+        ChartIcon,
+        PackageIcon
+      };
+    })();
+  </script>
+
+  <!-- FadingVideo：rAF 驱动的自循环淡入淡出 -->
+  <script type="text/babel">
+    (function () {
+      const FADE_MS = 500;
+      const FADE_OUT_LEAD = 0.55;
+
+      function FadingVideo({ src, className = "", style }) {
+        const videoRef = React.useRef(null);
+        const rafRef = React.useRef(0);
+        const restartRef = React.useRef(0);
+        const fadingOutRef = React.useRef(false);
+
+        React.useEffect(function () {
+          const video = videoRef.current;
+          if (!video) return undefined;
+
+          let started = false;
+          fadingOutRef.current = false;
+
+          function fadeTo(target, duration) {
+            const total = duration || FADE_MS;
+            cancelAnimationFrame(rafRef.current);
+            const from = parseFloat(video.style.opacity || "0");
+            const startTime = performance.now();
+
+            function frame(now) {
+              const progress = Math.min((now - startTime) / total, 1);
+              video.style.opacity = String(from + (target - from) * progress);
+              if (progress < 1) {
+                rafRef.current = requestAnimationFrame(frame);
+              }
+            }
+
+            rafRef.current = requestAnimationFrame(frame);
+          }
+
+          function onLoadedData() {
+            if (started) return;
+            started = true;
+            video.style.opacity = "0";
+            const promise = video.play();
+            if (promise && promise.catch) promise.catch(function () {});
+            fadeTo(1);
+          }
+
+          function onTimeUpdate() {
+            if (fadingOutRef.current) return;
+            if (!video.duration) return;
+            const remaining = video.duration - video.currentTime;
+            if (remaining <= FADE_OUT_LEAD && remaining > 0) {
+              fadingOutRef.current = true;
+              fadeTo(0);
+            }
+          }
+
+          function onEnded() {
+            video.style.opacity = "0";
+            clearTimeout(restartRef.current);
+            restartRef.current = window.setTimeout(function () {
+              video.currentTime = 0;
+              const promise = video.play();
+              if (promise && promise.catch) promise.catch(function () {});
+              fadingOutRef.current = false;
+              fadeTo(1);
+            }, 100);
+          }
+
+          video.addEventListener("loadeddata", onLoadedData);
+          video.addEventListener("timeupdate", onTimeUpdate);
+          video.addEventListener("ended", onEnded);
+
+          if (video.readyState >= 2) {
+            onLoadedData();
+          }
+
+          return function () {
+            started = false;
+            cancelAnimationFrame(rafRef.current);
+            clearTimeout(restartRef.current);
+            video.removeEventListener("loadeddata", onLoadedData);
+            video.removeEventListener("timeupdate", onTimeUpdate);
+            video.removeEventListener("ended", onEnded);
+          };
+        }, [src]);
+
+        return (
+          <video
+            ref={videoRef}
+            className={className}
+            style={{ ...(style || {}), opacity: 0 }}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+          >
+            <source src={src} type="video/mp4" />
+          </video>
+        );
+      }
+
+      window.FadingVideo = FadingVideo;
+    })();
+  </script>
+
+  <!-- BlurText：逐词模糊入场 -->
+  <script type="text/babel">
+    (function () {
+      const { motion } = window.Motion;
+
+      function BlurText({
+        text,
+        as = "p",
+        className = "",
+        delay = 0,
+        wordGap = "0.28em"
+      }) {
+        const ref = React.useRef(null);
+        const [visible, setVisible] = React.useState(false);
+
+        React.useEffect(function () {
+          const el = ref.current;
+          if (!el) return undefined;
+          const observer = new IntersectionObserver(
+            function (entries) {
+              if (entries[0].isIntersecting) {
+                setVisible(true);
+                observer.disconnect();
+              }
+            },
+            { threshold: 0.1 }
+          );
+          observer.observe(el);
+          return function () {
+            observer.disconnect();
+          };
+        }, []);
+
+        const MotionTag = motion[as] || motion.p;
+        const words = text.split(" ").filter(Boolean);
+
+        return (
+          <MotionTag
+            ref={ref}
+            className={className}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              rowGap: "0.1em"
+            }}
+          >
+            {words.map(function (word, index) {
+              return (
+                <motion.span
+                  key={word + "-" + index}
+                  style={{ display: "inline-block", marginRight: wordGap }}
+                  initial={{ filter: "blur(10px)", opacity: 0, y: 50 }}
+                  animate={
+                    visible
+                      ? {
+                          filter: ["blur(10px)", "blur(5px)", "blur(0px)"],
+                          opacity: [0, 0.5, 1],
+                          y: [50, -5, 0]
+                        }
+                      : undefined
+                  }
+                  transition={{
+                    duration: 0.7,
+                    times: [0, 0.5, 1],
+                    ease: "easeOut",
+                    delay: delay + (index * 100) / 1000
+                  }}
+                >
+                  {word}
+                </motion.span>
+              );
+            })}
+          </MotionTag>
+        );
+      }
+
+      window.BlurText = BlurText;
+    })();
+  </script>
+
+  <!-- 通用动画与玻璃组件 -->
+  <script type="text/babel">
+    (function () {
+      const { motion } = window.Motion;
+      const { ArrowUpRight } = window.Icons;
+
+      function reveal(delay) {
+        return {
+          initial: { filter: "blur(10px)", opacity: 0, y: 20 },
+          animate: { filter: "blur(0px)", opacity: 1, y: 0 },
+          transition: { duration: 0.8, delay: delay || 0, ease: "easeOut" }
+        };
+      }
+
+      function rise(delay) {
+        return {
+          initial: { opacity: 0, y: 20 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.8, delay: delay || 0, ease: "easeOut" }
+        };
+      }
+
+      function Chip({ children, className = "" }) {
+        return (
+          <span
+            className={
+              "liquid-glass rounded-full px-3.5 py-1.5 text-xs font-medium text-white font-body " +
+              className
+            }
+          >
+            {children}
+          </span>
+        );
+      }
+
+      function FeatureCard({ icon, tags, title, body, delay = 0 }) {
+        return (
+          <motion.div
+            className="liquid-glass flex min-h-[360px] flex-col rounded-[1.25rem] p-6"
+            {...rise(delay)}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="liquid-glass grid h-11 w-11 shrink-0 place-items-center rounded-[0.75rem]">
+                {icon}
+              </div>
+              <div className="flex max-w-[70%] flex-wrap justify-end gap-1.5">
+                {tags.map(function (tag) {
+                  return (
+                    <span
+                      key={tag}
+                      className="liquid-glass whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-body text-white/90"
+                    >
+                      {tag}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex-1" />
+            <div className="mt-6">
+              <h3 className="font-heading italic text-3xl leading-none tracking-[-1px] text-white md:text-4xl">
+                {title}
+              </h3>
+              <p className="mt-3 max-w-[32ch] text-sm font-light leading-snug text-white/90 font-body">
+                {body}
+              </p>
+            </div>
+          </motion.div>
+        );
+      }
+
+      function StatCard({ icon, value, label }) {
+        return (
+          <div className="liquid-glass flex flex-1 flex-col rounded-[1.25rem] p-5 text-left sm:w-[220px] sm:flex-none">
+            <div className="text-white">{icon}</div>
+            <div className="mt-6 font-heading italic text-4xl leading-none tracking-[-1px] text-white">
+              {value}
+            </div>
+            <div className="mt-2 text-xs font-light leading-snug text-white font-body">
+              {label}
+            </div>
+          </div>
+        );
+      }
+
+      function PageIntro({ kicker, title, intro }) {
+        return (
+          <div>
+            <motion.p className="mb-6 text-sm font-body text-white/80" {...reveal(0.05)}>
+              {kicker}
+            </motion.p>
+            <motion.h1
+              className="font-heading italic text-6xl leading-[0.95] tracking-[-3px] text-white md:text-7xl lg:text-[6rem]"
+              {...reveal(0.15)}
+            >
+              {title}
+            </motion.h1>
+            {intro ? (
+              <motion.p
+                className="mt-6 max-w-2xl text-sm font-light leading-snug text-white/90 font-body md:text-base"
+                {...reveal(0.25)}
+              >
+                {intro}
+              </motion.p>
+            ) : null}
+          </div>
+        );
+      }
+
+      function PageShell({ video, children }) {
+        return (
+          <section className="relative min-h-screen overflow-hidden bg-black">
+            <FadingVideo
+              src={video}
+              className="absolute inset-0 z-0 h-full w-full object-cover"
+            />
+            <div className="relative z-10 flex min-h-screen flex-col px-8 pb-16 pt-32 md:px-16 lg:px-20">
+              {children}
+            </div>
+          </section>
+        );
+      }
+
+      function BottomChips({ items }) {
+        return (
+          <div className="mt-auto flex flex-wrap gap-3 pt-12">
+            {items.map(function (item) {
+              return (
+                <span
+                  key={item}
+                  className="liquid-glass rounded-full px-4 py-2 text-xs font-medium text-white font-body"
+                >
+                  {item}
+                </span>
+              );
+            })}
+          </div>
+        );
+      }
+
+      function StepCard({ index, title, body, delay, children }) {
+        return (
+          <motion.div
+            className="liquid-glass flex min-h-[320px] flex-col rounded-[1.25rem] p-6"
+            {...rise(delay)}
+          >
+            <span className="font-heading italic text-5xl leading-none text-white">
+              {index}
+            </span>
+            <div className="flex-1" />
+            <h3 className="font-heading italic text-3xl leading-none tracking-[-1px] text-white">
+              {title}
+            </h3>
+            <p className="mt-3 text-sm font-light leading-snug text-white/90 font-body">
+              {body}
+            </p>
+            {children}
+          </motion.div>
+        );
+      }
+
+      window.UI = {
+        reveal,
+        rise,
+        Chip,
+        FeatureCard,
+        StatCard,
+        PageIntro,
+        PageShell,
+        BottomChips,
+        StepCard,
+        ArrowUpRight,
+        motion
+      };
+    })();
+  </script>
+
+  <!-- 导航：固定液态玻璃胶囊 + 移动端玻璃菜单，仅一个 GitHub 按钮 -->
+  <script type="text/babel">
+    (function () {
+      const { motion, AnimatePresence } = window.Motion;
+      const { ArrowUpRight, Menu, Close } = window.Icons;
+      const SITE = window.SITE;
+
+      function Navbar({ route }) {
+        const [open, setOpen] = React.useState(false);
+
+        React.useEffect(
+          function () {
+            setOpen(false);
+          },
+          [route]
+        );
+
+        React.useEffect(
+          function () {
+            if (!open) return undefined;
+            const previousOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            function onKeyDown(event) {
+              if (event.key === "Escape") setOpen(false);
+            }
+            window.addEventListener("keydown", onKeyDown);
+            return function () {
+              document.body.style.overflow = previousOverflow;
+              window.removeEventListener("keydown", onKeyDown);
+            };
+          },
+          [open]
+        );
+
+        return (
+          <header className="fixed inset-x-0 top-4 z-50 px-8 lg:px-16">
+            <div className="relative z-50 flex items-center justify-between">
+              <a
+                href="#/"
+                aria-label="返回首页"
+                className="liquid-glass grid h-12 w-12 place-items-center rounded-full"
+                onClick={function () {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <span className="font-heading text-2xl leading-none text-white">驿</span>
+              </a>
+
+              <div className="liquid-glass hidden items-center rounded-full p-1.5 md:flex">
+                <nav className="flex items-center">
+                  {SITE.nav.map(function (item) {
+                    const active = route === item.key;
+                    return (
+                      <a
+                        key={item.key}
+                        href={item.hash}
+                        className={
+                          "px-3 py-2 text-sm font-medium font-body transition-colors " +
+                          (active ? "text-white" : "text-white/90 hover:text-white")
+                        }
+                      >
+                        {item.label}
+                      </a>
+                    );
+                  })}
+                </nav>
+                <a
+                  href={SITE.github}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-1 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-white px-4 py-2 text-sm font-medium text-black"
+                >
+                  GitHub
+                  <ArrowUpRight className="h-4 w-4" />
+                </a>
+              </div>
+
+              <button
+                type="button"
+                className="liquid-glass grid h-12 w-12 place-items-center rounded-full md:hidden"
+                aria-label={open ? "关闭菜单" : "打开菜单"}
+                aria-expanded={open}
+                onClick={function () {
+                  setOpen(function (value) {
+                    return !value;
+                  });
+                }}
+              >
+                {open ? (
+                  <Close className="h-5 w-5 text-white" />
+                ) : (
+                  <Menu className="h-5 w-5 text-white" />
+                )}
+              </button>
+
+              <div className="hidden h-12 w-12 md:block" aria-hidden="true" />
+            </div>
+
+            <AnimatePresence>
+              {open ? (
+                <React.Fragment>
+                  <motion.div
+                    key="overlay"
+                    className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={function () {
+                      setOpen(false);
+                    }}
+                  />
+                  <motion.nav
+                    key="sheet"
+                    className="liquid-glass fixed inset-x-4 top-24 z-40 rounded-[1.5rem] p-3 md:hidden"
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.28, ease: "easeOut" }}
+                  >
+                    {SITE.nav.map(function (item, index) {
+                      const active = route === item.key;
+                      return (
+                        <motion.a
+                          key={item.key}
+                          href={item.hash}
+                          className={
+                            "block rounded-full px-4 py-3 text-center text-base font-medium font-body " +
+                            (active ? "bg-white/10 text-white" : "text-white/85")
+                          }                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.05 + index * 0.05, duration: 0.3 }}
+                          onClick={function () {
+                            setOpen(false);
+                          }}
+                        >
+                          {item.label}
+                        </motion.a>
+                      );
+                    })}
+                    <a
+                      href={SITE.github}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 flex items-center justify-between rounded-full bg-white px-4 py-3 text-sm font-medium text-black"
+                    >
+                      GitHub
+                      <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                  </motion.nav>
+                </React.Fragment>
+              ) : null}
+            </AnimatePresence>
+          </header>
+        );
+      }
+
+      window.Navbar = Navbar;
+    })();
+  </script>
+
+  <!-- 首页：Hero + Capabilities -->
+  <script type="text/babel">
+    (function () {
+      const { motion } = window.Motion;
+      const SITE = window.SITE;
+      const { ArrowUpRight, Play, Clock, Globe, ImageIcon, MovieIcon, BulbIcon } =
+        window.Icons;
+      const { reveal, rise, StatCard, FeatureCard } = window.UI;
+
+      function HomePage() {
+        const capabilityCards = [
+          {
+            icon: <ImageIcon className="h-6 w-6 text-white" />,
+            tags: ["彩色面板", "数据表格", "轨迹时间线", "仪表盘"],
+            title: "控制台可视化",
+            body: "告别黑白终端的枯燥。统计面板、数据表格、物流轨迹与统一输入封装，让每一次查询都有清晰的视觉反馈。"
+          },
+          {
+            icon: <MovieIcon className="h-6 w-6 text-white" />,
+            tags: ["数据模型", "持久层", "视图层", "业务层"],
+            title: "模块化架构",
+            body: "模型、数据、视图、认证、用户端与管理端分层解耦；单文件版本与模块化源码完全一致，便于阅读、扩展与交付。"
+          },
+          {
+            icon: <BulbIcon className="h-6 w-6 text-white" />,
+            tags: ["纯文本", "可读可备份", "无二进制", "跨平台"],
+            title: "零依赖持久化",
+            body: "用户、包裹与操作日志全部落盘为可读文本，规避结构体对齐与二进制兼容问题；复制 data/ 目录即可迁移与备份。"
+          }
+        ];
+
+        function scrollToCapabilities() {
+          const target = document.getElementById("capabilities");
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        return (
+          <div>
+            <section className="relative min-h-screen overflow-hidden bg-black">
+              <window.FadingVideo
+                src={SITE.heroVideo}
+                className="absolute left-1/2 top-0 z-0 -translate-x-1/2 object-cover object-top"
+                style={{ width: "120%", height: "120%" }}
+              />
+
+              <div className="relative z-10 flex min-h-screen flex-col px-4 pt-24">
+                <div className="flex flex-1 flex-col items-center justify-center py-10 text-center">
+                  <motion.div
+                    className="liquid-glass inline-flex items-center gap-2 rounded-full p-1 pr-3"
+                    {...reveal(0.4)}
+                  >
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black">
+                      新
+                    </span>
+                    <span className="pr-1 text-sm text-white/90 font-body">
+                      纯 C 控制台物流系统 · 零第三方依赖
+                    </span>
+                  </motion.div>
+
+                  <window.BlurText
+                    as="h1"
+                    text="让每一次 托付 穿越星海 抵达"
+                    className="mt-6 max-w-2xl text-6xl font-heading italic leading-[0.95] tracking-[-4px] text-white md:text-7xl lg:text-[5.5rem]"
+                    wordGap="0.28em"
+                  />
+
+                  <motion.p
+                    className="mt-4 max-w-2xl text-sm font-light leading-tight text-white font-body md:text-base"
+                    {...reveal(0.8)}
+                  >
+                    以标准 C 与 Windows 控制台 API 构建的轻量级物流追踪系统。模块化分层架构、纯文本持久化与可视化轨迹，让入库、转运、签收的每一步都清晰可溯。
+                  </motion.p>
+
+                  <motion.div
+                    className="mt-6 flex items-center gap-6"
+                    {...reveal(1.1)}
+                  >
+                    <a
+                      href="#/voyages"
+                      className="liquid-glass-strong inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-medium text-white"
+                    >
+                      开始航程
+                      <ArrowUpRight className="h-5 w-5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={scrollToCapabilities}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-white font-body"
+                    >
+                      <Play className="h-4 w-4" />
+                      查看能力
+                    </button>
+                  </motion.div>
+
+                  <motion.div
+                    className="mt-8 flex w-full max-w-[460px] items-stretch justify-center gap-4 sm:max-w-none"
+                    {...rise(1.3)}
+                  >
+                    <StatCard
+                      icon={<Clock className="h-7 w-7" />}
+                      value="3 天"
+                      label="运输时限 · 超时滞留自动识别"
+                    />
+                    <StatCard
+                      icon={<Globe className="h-7 w-7" />}
+                      value="100%"
+                      label="纯文本持久化 · 可读可备份"
+                    />
+                  </motion.div>
+                </div>
+
+                <motion.div
+                  className="flex flex-col items-center gap-4 pb-8"
+                  {...reveal(1.4)}
+                >
+                  <span className="liquid-glass rounded-full px-3.5 py-1 text-xs font-medium text-white font-body">
+                    以标准 C 与 Win32 控制台 API 构建
+                  </span>
+                  <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 font-heading italic text-2xl text-white md:gap-x-16 md:text-3xl">
+                    {["模型", "数据", "视图", "认证", "业务"].map(function (name, index) {
+                      return (
+                        <React.Fragment key={name}>
+                          <span>{name}</span>
+                          {index < 4 ? (
+                            <span className="self-center font-body text-base not-italic text-white/40">
+                              ·
+                            </span>
+                          ) : null}
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+
+            <section
+              id="capabilities"
+              className="relative min-h-screen overflow-hidden bg-black"
+            >
+              <window.FadingVideo
+                src={SITE.capVideo}
+                className="absolute inset-0 z-0 h-full w-full object-cover"
+              />
+
+              <div className="relative z-10 flex min-h-screen flex-col px-8 pb-10 pt-24 md:px-16 lg:px-20">
+                <div className="mb-auto">
+                  <motion.p
+                    className="mb-6 text-sm font-body text-white/80"
+                    {...reveal(0.05)}
+                  >
+                    // 核心能力
+                  </motion.p>
+                  <motion.h2
+                    className="font-heading italic text-6xl leading-[0.95] tracking-[-3px] text-white md:text-7xl lg:text-[6rem]"
+                    {...reveal(0.15)}
+                  >
+                    生产级
+                    <br />
+                    已就绪
+                  </motion.h2>
+                </div>
+
+                <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
+                  {capabilityCards.map(function (card, index) {
+                    return (
+                      <FeatureCard
+                        key={card.title}
+                        icon={card.icon}
+                        tags={card.tags}
+                        title={card.title}
+                        body={card.body}
+                        delay={0.35 + index * 0.12}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          </div>
+        );
+      }
+
+      window.HomePage = HomePage;
+    })();
+  </script>
+
+  <!-- 航程页 -->
+  <script type="text/babel">
+    (function () {
+      const { motion } = window.Motion;
+      const SITE = window.SITE;
+      const { PageShell, PageIntro, BottomChips, rise } = window.UI;
+
+      const stages = [
+        {
+          number: "01",
+          status: "已下单",
+          title: "寄件下单",
+          body: "选择收件人、重量、时效与保价，基础运费、续重费与高价值加成即时结算。",
+          tags: ["标准 / 加急", "省内 / 省外", "保价"]
+        },
+        {
+          number: "02",
+          status: "运输中",
+          title: "运输在途",
+          body: "包裹按运输方式与距离进入在途状态，超过 3 天自动模拟送达，轨迹同步更新。",
+          tags: ["状态机", "自动送达", "轨迹"]
+        },
+        {
+          number: "03",
+          status: "待取件",
+          title: "到站待取",
+          body: "入库自动生成唯一单号与 4 位取件码，到站提醒与超时提醒写入站内消息。",
+          tags: ["入库", "取件码", "站内消息"]
+        },
+        {
+          number: "04",
+          status: "已取件",
+          title: "凭码取件",
+          body: "本人或代取均可核验取件码，出库后包裹进入已取件状态，物流轨迹完整闭环。",
+          tags: ["本人取件", "代取", "出库"]
+        }
+      ];
+
+      function VoyagesPage() {
+        return (
+          <PageShell video={SITE.capVideo}>
+            <PageIntro
+              kicker="// 航程"
+              title={
+                <React.Fragment>
+                  一件包裹
+                  <br />
+                  的四段航程
+                </React.Fragment>
+              }
+              intro="从寄件到签收，每一次状态流转都被记录、计算与可视化。这是包裹在驿站里的完整航线。"
+            />
+
+            <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {stages.map(function (stage, index) {
+                return (
+                  <motion.div
+                    key={stage.number}
+                    className="liquid-glass flex min-h-[300px] flex-col rounded-[1.25rem] p-6"
+                    {...rise(0.35 + index * 0.1)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="font-heading italic text-5xl leading-none text-white">
+                        {stage.number}
+                      </span>
+                      <span className="liquid-glass whitespace-nowrap rounded-full px-3 py-1 text-[11px] text-white/90 font-body">
+                        {stage.status}
+                      </span>
+                    </div>
+                    <div className="flex-1" />
+                    <h3 className="font-heading italic text-3xl leading-none tracking-[-1px] text-white">
+                      {stage.title}
+                    </h3>
+                    <p className="mt-3 text-sm font-light leading-snug text-white/90 font-body">
+                      {stage.body}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {stage.tags.map(function (tag) {
+                        return (
+                          <span
+                            key={tag}
+                            className="liquid-glass whitespace-nowrap rounded-full px-3 py-1 text-[11px] text-white/90 font-body"
+                          >
+                            {tag}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <BottomChips
+              items={["3 天 自动送达", "4 位 取件码", "全程 可视化轨迹", "超时 滞留提醒"]}
+            />
+          </PageShell>
+        );
+      }
+
+      window.VoyagesPage = VoyagesPage;
+    })();
+  </script>
+
+  <!-- 源码页：代码结构与运行逻辑 -->
+  <script type="text/babel">
+    (function () {
+      const { motion } = window.Motion;
+      const SITE = window.SITE;
+      const { PageIntro, BottomChips, reveal, rise } = window.UI;
+
+      function Tag({ children }) {
+        return (
+          <span className="liquid-glass whitespace-nowrap rounded-full px-2.5 py-1 font-mono text-[10px] text-white/70">
+            {children}
+          </span>
+        );
+      }
+
+      function CodePanel({ title, code, delay = 0 }) {
+        return (
+          <motion.div
+            className="liquid-glass rounded-[1.25rem] p-5 md:p-6"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            {...rise(delay)}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="text-[10px] uppercase tracking-[0.22em] text-white/45 font-body">
+                {title}
+              </span>
+              <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+            </div>
+            <pre className="overflow-x-auto whitespace-pre font-mono text-[10px] leading-relaxed text-white/80 md:text-[11px]">
+              {code}
+            </pre>
+          </motion.div>
+        );
+      }
+
+      function LayerCard({ index, title, files, lines, body, functions, delay }) {
+        return (
+          <motion.div
+            className="liquid-glass flex h-full flex-col rounded-[1.25rem] p-6"
+            {...rise(delay)}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] tracking-[0.22em] text-white/45 font-body">{index}</p>
+                <h3 className="mt-2 font-heading italic text-3xl leading-none tracking-[-1px] text-white">
+                  {title}
+                </h3>
+              </div>
+              <span className="liquid-glass whitespace-nowrap rounded-full px-3 py-1 text-[10px] text-white/65 font-body">
+                {lines}
+              </span>
+            </div>
+            <p className="mt-3 break-all font-mono text-[10px] text-white/55">{files}</p>
+            <p className="mt-3 text-sm font-light leading-snug text-white/90 font-body">{body}</p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {functions.map(function (name) {
+                return <Tag key={name}>{name}</Tag>;
+              })}
+            </div>
+          </motion.div>
+        );
+      }
+
+      function FlowCard({ index, title, code, body, delay }) {
+        return (
+          <motion.div
+            className="liquid-glass flex h-full flex-col rounded-[1.25rem] p-5 md:p-6"
+            {...rise(delay)}
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-heading italic text-3xl leading-none text-white">{index}</span>
+              <span className="liquid-glass rounded-full px-2.5 py-1 font-mono text-[10px] text-white/65">
+                {code}
+              </span>
+            </div>
+            <h3 className="mt-5 font-heading italic text-2xl leading-none text-white">{title}</h3>
+            <p className="mt-3 text-sm font-light leading-snug text-white/85 font-body">{body}</p>
+          </motion.div>
+        );
+      }
+
+      function StructCard({ name, summary, fields, delay }) {
+        return (
+          <motion.div
+            className="liquid-glass flex h-full flex-col rounded-[1.25rem] p-5 md:p-6"
+            {...rise(delay)}
+          >
+            <h3 className="font-mono text-sm text-white/90">{name}</h3>
+            <p className="mt-3 text-sm font-light leading-snug text-white/85 font-body">{summary}</p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {fields.map(function (field) {
+                return <Tag key={field}>{field}</Tag>;
+              })}
+            </div>
+          </motion.div>
+        );
+      }
+
+      function StateBit({ bit, title, values, note, delay }) {
+        return (
+          <motion.div
+            className="liquid-glass flex h-full flex-col rounded-[1.25rem] p-5"
+            {...rise(delay)}
+          >
+            <p className="font-mono text-[10px] text-white/45">{bit}</p>
+            <h3 className="mt-2 font-heading italic text-2xl leading-none text-white">{title}</h3>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {values.map(function (value) {
+                return <Tag key={value}>{value}</Tag>;
+              })}
+            </div>
+            <p className="mt-3 text-[11px] leading-snug text-white/55 font-body">{note}</p>
+          </motion.div>
+        );
+      }
+
+      function RuleCard({ title, code, body, delay }) {
+        return (
+          <motion.div
+            className="liquid-glass flex h-full flex-col rounded-[1.25rem] p-5 md:p-6"
+            {...rise(delay)}
+          >
+            <h3 className="font-heading italic text-2xl leading-none text-white">{title}</h3>
+            <p className="mt-2 font-mono text-[10px] text-white/55">{code}</p>
+            <p className="mt-3 text-sm font-light leading-snug text-white/85 font-body">{body}</p>
+          </motion.div>
+        );
+      }
+
+      function Block({ index, title, subtitle, children }) {
+        return (
+          <section className="mt-20">
+            <motion.div
+              className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+              {...reveal(0.05)}
+            >
+              <div>
+                <p className="text-[11px] tracking-[0.28em] text-white/45 font-body">{index}</p>
+                <h2 className="mt-2 font-heading italic text-4xl leading-none tracking-[-2px] text-white md:text-5xl">
+                  {title}
+                </h2>
+              </div>
+              {subtitle ? (
+                <p className="max-w-md text-xs leading-relaxed text-white/50 font-body md:text-right">
+                  {subtitle}
+                </p>
+              ) : null}
+            </motion.div>
+            <div className="mt-8">{children}</div>
+          </section>
+        );
+      }
+
+      const tree = [
+        "Cainiao-Station/",
+        "├─ main.c                     # 由 src/ 合并生成的单文件版本",
+        "├─ src/",
+        "│  ├─ main.c                  # 程序入口、系统概览、主循环",
+        "│  ├─ model.h / model.c       # 结构体、链表、状态机、运费、消息",
+        "│  ├─ data.h / data.c         # 文本持久化、演示数据、日志",
+        "│  ├─ ui.h / ui.c             # 控制台颜色、面板、菜单、输入封装",
+        "│  ├─ auth.h / auth.c         # 登录、注册、注销、默认管理员",
+        "│  ├─ user.h / user.c         # 用户端：寄件、取件、轨迹、消息",
+        "│  └─ manager.h / manager.c   # 管理端：入库、出库、查询、库存、日志",
+        "├─ data/                      # 运行时自动生成",
+        "│  ├─ users.txt",
+        "│  ├─ packages.txt",
+        "│  ├─ system_journal.txt",
+        "│  ├─ user_journal.txt",
+        "│  └─ manager_journal.txt",
+        "├─ tools/",
+        "│  └─ build_single_file.py    # 重新生成根目录 main.c",
+        "├─ CainiaoStation.sln         # Visual Studio 工程",
+        "├─ build.bat / run.bat        # Windows 一键构建 / 运行",
+        "├─ Makefile                   # GCC / MinGW",
+        "└─ README.md"
+      ].join("\n");
+
+      const stateCode = [
+        "/* 运输超过 3 天 */",
+        "if (p->state[0] == PKG_STATE_IN_TRANSIT && days > 3) {",
+        "    p->state[2] = TRANSIT_STATE_ARRIVED;",
+        "    p->state[0] = p->is_user ? PKG_STATE_IN_STOCK : PKG_STATE_PICKED;",
+        "}",
+        "",
+        "/* 入库超过 3 天仍未取件 */",
+        "if (p->state[0] == PKG_STATE_IN_STOCK && p->state[3] == OVERDUE_NO && days > 3) {",
+        "    p->state[3] = OVERDUE_YES;",
+        "    add_user_message(owner, \"您的包裹滞留超时……\");",
+        "}"
+      ].join("\n");
+
+      const usersFile = [
+        "# name|account|password|message_count|message_head|new_messages",
+        "张三|zhangsan|123456|2|0|1",
+        "M|1730000000|欢迎使用菜鸟驿站智能快递管理系统。",
+        "M|1730003600|您的包裹已送达目的地，请尽快取件。"
+      ].join("\n");
+
+      const packagesFile = [
+        "# pack_num|pickup|weight|transport|value|distance|insurance|owner|receiver|phone|is_user|state0..3|in time|out time|money",
+        "1001|2024|2.50|0|-1|1|0|张三|张三|-|1|1|1|1|0|2026|11|14|09|30|00|317|0|0|0|0|0|0|0|0.00"
+      ].join("\n");
+
+      const buildCode = [
+        "HEADERS = [\"model.h\", \"data.h\", \"ui.h\", \"auth.h\", \"user.h\", \"manager.h\"]",
+        "SOURCES = [\"model.c\", \"data.c\", \"ui.c\", \"auth.c\", \"user.c\", \"manager.c\", \"main.c\"]",
+        "",
+        "parts = [\"#define _CRT_SECURE_NO_WARNINGS 1\\n\"]",
+        "for name in HEADERS + SOURCES:",
+        "    text = read_utf8(SRC / name)",
+        "    parts.append(strip_local_includes(text))",
+        "",
+        "OUT.write_text(\"\".join(parts), encoding=\"utf-8-sig\")"
+      ].join("\n");
+
+      const callChain = [
+        "main()",
+        "├─ ui_init() / ensure_data_dir()",
+        "├─ load_users() / load_packages()",
+        "├─ seed_demo_data()                 // 两条链表都为空时",
+        "├─ simulate_delivery_and_overdue()  // 推进运输 / 超时状态",
+        "├─ refresh_user_packages()          // 重建用户包裹视图",
+        "├─ create_default_managers()",
+        "├─ login_manager()  → manager_console()",
+        "│     ├─ manager_put_in / manager_put_out",
+        "│     ├─ manager_search / manager_view_inventory",
+        "│     └─ manager_delete_user / manager_view_logs",
+        "├─ login_user()     → user_console()",
+        "│     ├─ send_package / pickup_package",
+        "│     └─ track_packages / show_messages",
+        "└─ save_users() / save_packages() / append_log() / free_*()"
+      ].join("\n");
+
+      const layers = [
+        {
+          index: "LAYER 01",
+          title: "入口层",
+          lines: "84 行",
+          files: "src/main.c",
+          body: "初始化控制台与 data/ 目录，加载两条链表，执行状态仿真，进入登录主循环，退出时统一落盘与释放。",
+          functions: ["main", "print_system_overview"]
+        },
+        {
+          index: "LAYER 02",
+          title: "认证层",
+          lines: "152 行",
+          files: "src/auth.h / auth.c",
+          body: "用户注册、用户登录、管理员登录与账号注销；默认内置 0001/8888 与 0002/9999 两个管理员。",
+          functions: ["login_user", "register_user_interactive", "login_manager", "cancel_user_account"]
+        },
+        {
+          index: "LAYER 03",
+          title: "业务层",
+          lines: "654 行",
+          files: "src/user.h / user.c / manager.h / manager.c",
+          body: "用户端寄件、取件、轨迹与消息；管理端入库、出库、多条件查询、库存、日志与注销用户。",
+          functions: ["user_console", "send_package", "pickup_package", "manager_console", "manager_put_in", "manager_search"]
+        },
+        {
+          index: "LAYER 04",
+          title: "领域层",
+          lines: "483 行",
+          files: "src/model.h / model.c",
+          body: "结构体、链表、状态机、运费计算、消息环形缓冲、统计与级联删除，是整个系统的规则中心。",
+          functions: ["compute_shipping_fee", "simulate_delivery_and_overdue", "refresh_user_packages", "add_user_message", "remove_user_and_packages"]
+        },
+        {
+          index: "LAYER 05",
+          title: "持久层",
+          lines: "240 行",
+          files: "src/data.h / data.c",
+          body: "users.txt / packages.txt 的逐行解析与全量写回，首次启动生成演示数据，所有关键操作追加日志。",
+          functions: ["load_users", "save_users", "load_packages", "save_packages", "seed_demo_data", "append_log"]
+        },
+        {
+          index: "LAYER 06",
+          title: "界面层",
+          lines: "237 行",
+          files: "src/ui.h / ui.c",
+          body: "ANSI 颜色、面板、菜单、居中文本、中文宽度计算与安全输入封装，让控制台拥有统一的视觉语言。",
+          functions: ["ui_header", "ui_panel", "ui_menu", "ui_notice", "read_line", "read_int_range"]
+        }
+      ];
+
+      const stages = [
+        {
+          index: "01",
+          title: "初始化",
+          code: "ui_init() / ensure_data_dir()",
+          body: "设置控制台编码与颜色，创建 data/ 目录；失败也不会中断，后续读写会自然降级。"
+        },
+        {
+          index: "02",
+          title: "加载数据",
+          code: "load_users() / load_packages()",
+          body: "逐行读取 users.txt 与 packages.txt，按 | 分隔解析，构建用户链表与包裹链表；# 行与空行会被跳过。"
+        },
+        {
+          index: "03",
+          title: "首次启动",
+          code: "seed_demo_data()",
+          body: "当用户链表与包裹链表同时为空时，生成 3 个演示用户、5 个演示包裹和欢迎消息，并立即写回 data/。"
+        },
+        {
+          index: "04",
+          title: "状态仿真",
+          code: "simulate_delivery_and_overdue()",
+          body: "按入库天数推进运输、到站与超时状态；随后 refresh_user_packages() 把全局包裹克隆挂到每个用户名下。"
+        },
+        {
+          index: "05",
+          title: "进入主循环",
+          code: "create_default_managers()",
+          body: "创建默认管理员，显示系统概览，等待选择管理员登录、客户登录/注册或退出。"
+        },
+        {
+          index: "06",
+          title: "退出落盘",
+          code: "save_users() / save_packages()",
+          body: "全量写回两个文本文件，追加 system_journal.txt，最后释放用户、包裹与管理器链表。"
+        }
+      ];
+
+      const structs = [
+        {
+          name: "struct User",
+          summary: "用户链表节点。packages 是全局包裹链表的克隆视图，由 refresh_user_packages() 重建，避免双重所有权。",
+          fields: ["name", "account", "password", "packages", "messages[30]", "message_head", "message_count", "new_messages", "next"]
+        },
+        {
+          name: "struct Package",
+          summary: "包裹主链表节点。计费、归属、4 个状态位、入库/出库时间与运费全部保存在一个结构体中，并逐字段落盘。",
+          fields: ["pack_num", "pickup_code", "weight", "transport", "value", "distance", "insurance", "owner", "receiver", "is_user", "state[4]", "money", "next"]
+        },
+        {
+          name: "struct Message",
+          summary: "站内消息环形缓冲区，每个用户最多保留 30 条；写满后覆盖最旧一条，new_messages 记录未读数。",
+          fields: ["content[80]", "timestamp"]
+        },
+        {
+          name: "struct Manager",
+          summary: "管理员链表节点。默认创建两个账号，登录最多尝试 5 次；管理员信息不落盘，随程序启动重建。",
+          fields: ["account", "password", "next"]
+        }
+      ];
+
+      const stateBits = [
+        {
+          bit: "state[0]",
+          title: "存储状态",
+          values: ["1 在库", "0 已取件", "-1 运输中"],
+          note: "决定包裹当前处于仓库、运输还是已签收。"
+        },
+        {
+          bit: "state[1]",
+          title: "包裹状态",
+          values: ["1 完好", "0 有损"],
+          note: "入库时登记，查询与详情中展示。"
+        },
+        {
+          bit: "state[2]",
+          title: "运输状态",
+          values: ["0 运输中", "1 已送达", "-1 不适用"],
+          note: "运输阶段的独立标记，便于生成轨迹时间线。"
+        },
+        {
+          bit: "state[3]",
+          title: "时效状态",
+          values: ["0 正常", "1 超时滞留"],
+          note: "入库超过 3 天未取件时置为超时。"
+        }
+      ];
+
+      const rules = [
+        {
+          title: "运费计算",
+          code: "compute_shipping_fee()",
+          body: "标准省内 10 元、标准省外 12 元、加急省内 12 元、加急省外 22 元；超过 1kg 按 2–8 元/kg 续重；价值 ≥1000 元总价 ×1.1；保价 +2 元，并按 (价值-1000)×0.003 追加。"
+        },
+        {
+          title: "超时与送达",
+          code: "simulate_delivery_and_overdue()",
+          body: "运输超过 3 天自动送达：用户包裹转入待取件，非用户包裹直接签收。入库超过 3 天标记超时滞留；第 2–3 天发送即将超时提醒。"
+        },
+        {
+          title: "消息缓冲",
+          code: "add_user_message()",
+          body: "环形队列容量 30，使用 message_head 与 message_count 定位写入位置；写满时 head 前移覆盖最旧消息，new_messages 同步累加。"
+        },
+        {
+          title: "注销级联",
+          code: "remove_user_and_packages()",
+          body: "注销前用 has_active_packages() 拦截运输中或待取件用户；确认后从用户链表摘除节点、释放包裹副本，并删除该用户名下全部包裹，最后写回两个文件。"
+        }
+      ];
+
+      function SourcePage() {
+        return (
+          <div className="bg-black">
+            <section className="relative flex min-h-screen flex-col overflow-hidden bg-black">
+              <window.FadingVideo
+                src={SITE.heroVideo}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="relative z-10 flex min-h-screen flex-col px-8 pb-16 pt-32 md:px-16 lg:px-20">
+                <PageIntro
+                  kicker="// 源码"
+                  title={
+                    <React.Fragment>
+                      代码结构
+                      <br />
+                      与运行逻辑
+                    </React.Fragment>
+                  }
+                  intro="从 main() 到 data/，把整个纯 C 工程拆成六层职责、四条链表与一条完整调用链。"
+                />
+
+                <motion.div
+                  className="mt-8 flex flex-wrap gap-2.5"
+                  {...reveal(0.35)}
+                >
+                  {["7 个 .c 文件", "6 个头文件", "1,880 行 C", "6 层职责", "0 第三方依赖"].map(
+                    function (item) {
+                      return (
+                        <span
+                          key={item}
+                          className="liquid-glass rounded-full px-4 py-2 text-xs font-medium text-white/85 font-body"
+                        >
+                          {item}
+                        </span>
+                      );
+                    }
+                  )}
+                </motion.div>
+
+                <div className="mt-auto flex items-end justify-between gap-6 pt-16">
+                  <p className="max-w-md text-xs leading-relaxed text-white/55 font-body">
+                    向下滚动：分层 → 目录 → 启动时序 → 核心结构 → 状态机 → 持久化 → 构建链。
+                  </p>
+                  <span className="font-heading italic text-2xl text-white/70">01 — 09</span>
+                </div>
+              </div>
+            </section>
+
+            <div className="relative bg-black px-8 pb-24 pt-4 md:px-16 lg:px-20">
+              <div className="mx-auto max-w-[1200px]">
+                <Block
+                  index="01 / 分层架构"
+                  title="六层职责"
+                  subtitle="入口 → 认证 → 业务 → 领域 → 持久 → 界面，每一层只依赖它下面的层。"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {layers.map(function (layer, index) {
+                      return (
+                        <LayerCard
+                          key={layer.title}
+                          index={layer.index}
+                          title={layer.title}
+                          lines={layer.lines}
+                          files={layer.files}
+                          body={layer.body}
+                          functions={layer.functions}
+                          delay={0.1 + index * 0.06}
+                        />
+                      );
+                    })}
+                  </div>
+                </Block>
+
+                <Block
+                  index="02 / 目录结构"
+                  title="文件地图"
+                  subtitle="src/ 保留模块化源码；根目录 main.c 由 tools/build_single_file.py 自动合并。"
+                >
+                  <CodePanel title="Cainiao-Station/" code={tree} />
+                </Block>
+
+                <Block
+                  index="03 / 启动时序"
+                  title="从 main() 到主循环"
+                  subtitle="启动、仿真、登录、退出，每一步都有明确的输入与输出。"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {stages.map(function (stage, index) {
+                      return (
+                        <FlowCard
+                          key={stage.index}
+                          index={stage.index}
+                          title={stage.title}
+                          code={stage.code}
+                          body={stage.body}
+                          delay={0.1 + index * 0.06}
+                        />
+                      );
+                    })}
+                  </div>
+                </Block>
+
+                <Block
+                  index="04 / 核心结构"
+                  title="四条链表"
+                  subtitle="User / Package / Manager 是业务链表，Message 是用户内部的环形缓冲。"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {structs.map(function (item, index) {
+                      return (
+                        <StructCard
+                          key={item.name}
+                          name={item.name}
+                          summary={item.summary}
+                          fields={item.fields}
+                          delay={0.1 + index * 0.06}
+                        />
+                      );
+                    })}
+                  </div>
+                </Block>
+
+                <Block
+                  index="05 / 状态机"
+                  title="四个状态位"
+                  subtitle="没有数据库枚举，只有 4 个 int 状态位；状态推进全部集中在 model.c。"
+                >
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {stateBits.map(function (bit, index) {
+                      return (
+                        <StateBit
+                          key={bit.bit}
+                          bit={bit.bit}
+                          title={bit.title}
+                          values={bit.values}
+                          note={bit.note}
+                          delay={0.1 + index * 0.06}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4">
+                    <CodePanel title="simulate_delivery_and_overdue()" code={stateCode} delay={0.3} />
+                  </div>
+                </Block>
+
+                <Block
+                  index="06 / 持久化"
+                  title="文本文件格式"
+                  subtitle="data/ 下没有二进制、没有数据库；复制目录即可迁移与备份。"
+                >
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <CodePanel title="data/users.txt" code={usersFile} delay={0.1} />
+                    <CodePanel title="data/packages.txt" code={packagesFile} delay={0.16} />
+                  </div>
+                  <p className="mt-4 max-w-3xl text-xs leading-relaxed text-white/55 font-body">
+                    两个文件都以 # 注释行开头；用户文件中的 M|时间戳|内容 会挂到上一条用户记录，
+                    包裹文件是 30 个字段的竖线分隔行。读取时逐行 sscanf，写入时全量覆盖。
+                  </p>
+                </Block>
+
+                <Block
+                  index="07 / 单文件生成"
+                  title="build_single_file.py"
+                  subtitle="模块化源码与根目录单文件版本始终同源。"
+                >
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+                    <CodePanel title="tools/build_single_file.py" code={buildCode} delay={0.1} />
+                    <motion.div
+                      className="liquid-glass flex h-full flex-col justify-between rounded-[1.25rem] p-5 md:p-6"
+                      {...rise(0.16)}
+                    >
+                      <div>
+                        <h3 className="font-heading italic text-3xl leading-none text-white">同源策略</h3>
+                        <p className="mt-4 text-sm font-light leading-snug text-white/85 font-body">
+                          先拼接 6 个头文件，再拼接 7 个源文件；删除所有本地 #include，
+                          补上 _CRT_SECURE_NO_WARNINGS，最后写入根目录 main.c。
+                        </p>
+                      </div>
+                      <div className="mt-6 flex flex-wrap gap-1.5">
+                        <Tag>6 headers</Tag>
+                        <Tag>7 sources</Tag>
+                        <Tag>strip includes</Tag>
+                        <Tag>utf-8-sig</Tag>
+                        <Tag>python tools/build_single_file.py</Tag>
+                      </div>
+                    </motion.div>
+                  </div>
+                </Block>
+
+                <Block
+                  index="08 / 关键规则"
+                  title="业务逻辑切片"
+                  subtitle="所有规则都落在 model.c 或 auth.c，UI 只负责展示与输入。"
+                >
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {rules.map(function (rule, index) {
+                      return (
+                        <RuleCard
+                          key={rule.title}
+                          title={rule.title}
+                          code={rule.code}
+                          body={rule.body}
+                          delay={0.1 + index * 0.06}
+                        />
+                      );
+                    })}
+                  </div>
+                </Block>
+
+                <Block
+                  index="09 / 调用链"
+                  title="一次完整请求"
+                  subtitle="登录 → 控制台 → 模型 → 落盘，所有路径都可以沿着函数名追踪。"
+                >
+                  <CodePanel title="call chain" code={callChain} />
+                </Block>
+
+                <BottomChips
+                  items={["src/ 1,880 行", "data/ 5 个文本文件", "根目录 1 个合并版 main.c"]}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      window.SourcePage = SourcePage;
+    })();
+  </script>
+
+  <!-- 创新页 -->
+  <script type="text/babel">
+    (function () {
+      const SITE = window.SITE;
+      const { PageShell, PageIntro, BottomChips, FeatureCard } = window.UI;
+      const { CodeIcon, ChartIcon, DatabaseIcon } = window.Icons;
+
+      const innovations = [
+        {
+          icon: <CodeIcon className="h-6 w-6 text-white" />,
+          tags: ["标准库", "Win32 API", "单文件", "零依赖"],
+          title: "纯 C11",
+          body: "只使用 C 标准库与 Windows 控制台 API，一条 gcc 命令即可编译；也可以打开 VS2022 工程直接运行。"
+        },
+        {
+          icon: <ChartIcon className="h-6 w-6 text-white" />,
+          tags: ["4 状态位", "自动流转", "超时滞留", "取件闭环"],
+          title: "状态机",
+          body: "包裹状态由 4 个状态位表达：在库、完好、运输、超时。运输、到站、超时与取件构成清晰的业务闭环。"
+        },
+        {
+          icon: <DatabaseIcon className="h-6 w-6 text-white" />,
+          tags: ["可读", "可备份", "跨平台", "无对齐问题"],
+          title: "文本持久化",
+          body: "用户、包裹与日志全部写入文本文件，规避二进制结构体对齐与平台兼容问题，数据永远可读。"
+        }
+      ];
+
+      function InnovationPage() {
+        return (
+          <PageShell video={SITE.capVideo}>
+            <PageIntro
+              kicker="// 创新"
+              title={
+                <React.Fragment>
+                  纯粹的
+                  <br />
+                  工程选择
+                </React.Fragment>
+              }
+              intro="没有框架，没有第三方库，只有标准 C 与对控制台的充分理解。每一个设计决定都为了可读、可维护与可交付。"
+            />
+
+            <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
+              {innovations.map(function (item, index) {
+                return (
+                  <FeatureCard
+                    key={item.title}
+                    icon={item.icon}
+                    tags={item.tags}
+                    title={item.title}
+                    body={item.body}
+                    delay={0.35 + index * 0.12}
+                  />
+                );
+              })}
+            </div>
+
+            <BottomChips
+              items={["6 层 模块化架构", "0 个 第三方依赖", "100% 文本持久化"]}
+            />
+          </PageShell>
+        );
+      }
+
+      window.InnovationPage = InnovationPage;
+    })();
+  </script>
+
+  <!-- 启程页 -->
+  <script type="text/babel">
+    (function () {
+      const SITE = window.SITE;
+      const { PageShell, PageIntro, BottomChips, StepCard } = window.UI;
+
+      function CodeLine({ children }) {
+        return (
+          <div className="liquid-glass mt-3 break-all rounded-[0.75rem] px-3 py-2 font-mono text-[11px] leading-relaxed text-white/80">
+            {children}
+          </div>
+        );
+      }
+
+      function Tag({ children }) {
+        return (
+          <span className="liquid-glass whitespace-nowrap rounded-full px-3 py-1 text-[11px] text-white/90 font-body">
+            {children}
+          </span>
+        );
+      }
+
+      function LaunchPage() {
+        return (
+          <PageShell video={SITE.heroVideo}>
+            <PageIntro
+              kicker="// 启程"
+              title={
+                <React.Fragment>
+                  三步
+                  <br />
+                  启动驿站
+                </React.Fragment>
+              }
+              intro="不需要安装数据库，也不需要配置环境变量。拿到源码，编译，登录，驿站就开始运转。"
+            />
+
+            <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
+              <StepCard
+                index="01"
+                title="获取源码"
+                body="克隆仓库，或直接下载根目录的 main.c 单文件版本。"
+                delay={0.35}
+              >
+                <CodeLine>
+                  <span className="block text-white/50">git clone</span>
+                  <span className="block break-all">{SITE.github}.git</span>
+                </CodeLine>
+              </StepCard>
+
+              <StepCard
+                index="02"
+                title="编译运行"
+                body="双击 build.bat 编译、run.bat 运行；也可以打开 CainiaoStation.sln 按 F5。"
+                delay={0.47}
+              >
+                <div className="flex flex-wrap gap-1.5">
+                  <Tag>build.bat</Tag>
+                  <Tag>run.bat</Tag>
+                  <Tag>make run</Tag>
+                </div>
+              </StepCard>
+
+              <StepCard
+                index="03"
+                title="登录体验"
+                body="首次启动自动生成演示数据，使用以下账号进入用户端或管理端。"
+                delay={0.59}
+              >
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  <Tag>管理员 0001 / 8888</Tag>
+                  <Tag>客户 zhangsan / 123456</Tag>
+                  <Tag>客户 lisi / 123456</Tag>
+                </div>
+              </StepCard>
+            </div>
+
+            <BottomChips items={["Windows 10 / 11", "C11", "无第三方依赖"]} />
+          </PageShell>
+        );
+      }
+
+      window.LaunchPage = LaunchPage;
+    })();
+  </script>
+
+  <!-- 路由与挂载 -->
+  <script type="text/babel">
+    (function () {
+      const ROUTES = ["home", "voyages", "source", "innovation", "launch"];
+
+      function getRoute() {
+        const raw = (window.location.hash || "").replace(/^#\/?/, "").split("?")[0];
+        return ROUTES.indexOf(raw) !== -1 ? raw : "home";
+      }
+
+      function App() {
+        const [route, setRoute] = React.useState(getRoute());
+
+        React.useEffect(function () {
+          function sync() {
+            setRoute(getRoute());
+            window.scrollTo(0, 0);
+          }
+          window.addEventListener("hashchange", sync);
+          return function () {
+            window.removeEventListener("hashchange", sync);
+          };
+        }, []);
+
+        React.useEffect(
+          function () {
+            const titles = {
+              home: "菜鸟驿站 · 纯 C 控制台物流系统",
+              voyages: "航程 · 菜鸟驿站",
+              source: "源码 · 菜鸟驿站",
+              innovation: "创新 · 菜鸟驿站",
+              launch: "启程 · 菜鸟驿站"
+            };
+            document.title = titles[route] || titles.home;
+          },
+          [route]
+        );
+
+        return (
+          <div className="min-h-screen bg-black">
+            <window.Navbar route={route} />
+            {route === "home" ? <window.HomePage /> : null}
+            {route === "voyages" ? <window.VoyagesPage /> : null}
+            {route === "source" ? <window.SourcePage /> : null}
+            {route === "innovation" ? <window.InnovationPage /> : null}
+            {route === "launch" ? <window.LaunchPage /> : null}
+          </div>
+        );
+      }
+
+      window.App = App;
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    })();
+  </script>
+</body>
+</html>

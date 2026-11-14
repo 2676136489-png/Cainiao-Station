@@ -9,3 +9,4 @@ data/
 .idea/
 *.iml
 tools/zig/
+.trae-html-share-packages/
